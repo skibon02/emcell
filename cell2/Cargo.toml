@@ -1,0 +1,36 @@
+[package]
+name = "cell2"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+at32f4xx-pac = { version = "0.2.0", features = ["rt", "cortex-m-rt", "at32f407"] }
+
+cells_defs = {path = "../cells_defs"}
+cortex-m-rt = { version = "0.7.3", features = ["noreset"] }
+panic-halt = "0.2.0"
+
+emcell-macro = {path = "../emcell-macro"}
+emcell = { path = "../emcell" }
+
+[build-dependencies]
+cells_defs = {path = "../cells_defs"}
+emcell = {path = "../emcell", features = ["rt-crate-cortex-m-rt"]}
+
+[profile.release]
+debug = true
+codegen-units = 1
+lto = true
+opt-level = 3
+
+[profile.dev]
+opt-level = 1
+lto = true
+
+[[bin]]
+name="cell2"
+test=false
+bench=false
+
+[patch.crates-io]
+cortex-m-rt = { path="../cortex-m-rt-resetmod" }

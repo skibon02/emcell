@@ -1,0 +1,12 @@
+[package]
+name = "emcell"
+version = "0.1.0"
+edition = "2021"
+resolver = "2"
+
+[dependencies]
+
+[features]
+default = []
+build-rs = []
+rt-crate-cortex-m-rt = ["build-rs"]

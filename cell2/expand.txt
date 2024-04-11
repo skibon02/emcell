@@ -1,0 +1,73 @@
+#![feature(prelude_import)]
+#![no_std]
+#![no_main]
+#[prelude_import]
+use core::prelude::rust_2021::*;
+#[macro_use]
+extern crate core;
+extern crate compiler_builtins as _;
+use core::ptr;
+use cells_defs::*;
+use emcell_macro::{declare_abi_cell2, extern_abi};
+extern crate panic_halt;
+extern crate at32f4xx_pac;
+use panic_halt as _;
+#[no_mangle]
+#[export_name = "Reset"]
+pub fn reset() {}
+#[no_mangle]
+#[link_section = ".CELL2_ABI"]
+pub static CELL2_ABI: Cell2ABI = Cell2ABI {
+    b: 23,
+    run_some_code,
+    signature: 0xdeadbeef,
+    init_memory,
+};
+extern crate emcell;
+extern "Rust" {
+    pub static _emcell_Cell1ABI_internal: Cell1ABI;
+}
+pub type CELL1ABI_wrapper = emcell::CellWrapper<Cell1ABI>;
+pub unsafe trait CellWrapperTrait {
+    type CellWrapperType;
+    fn new() -> Option<Self::CellWrapperType>;
+    fn new_uninit() -> Self::CellWrapperType;
+}
+unsafe impl CellWrapperTrait for CELL1ABI_wrapper {
+    type CellWrapperType = CELL1ABI_wrapper;
+    fn new() -> Option<Self> {
+        let cell = unsafe { &_emcell_Cell1ABI_internal };
+        unsafe { emcell::CellWrapper::_new_init(cell) }
+    }
+    fn new_uninit() -> Self {
+        let cell = unsafe { &_emcell_Cell1ABI_internal };
+        unsafe { emcell::CellWrapper::_new_uninit(cell) }
+    }
+}
+pub fn run_some_code() {
+    if let Some(CELL1_ABI) = CELL1ABI_wrapper::new() {
+        (CELL1_ABI.print_some_value)(CELL1_ABI.a)
+    }
+}
+pub unsafe fn init_memory() {
+    extern "C" {
+        static mut __sbss: u32;
+        static mut __ebss: u32;
+        static mut __sdata: u32;
+        static mut __edata: u32;
+        static mut __sidata: u32;
+    }
+    let count = &__ebss as *const u32 as usize - &__sbss as *const u32 as usize;
+    let addr = &mut __sbss as *mut u32 as *mut u8;
+    if count > 0 {
+        ptr::write_bytes(addr, 0, count);
+    }
+    let count = &__edata as *const u32 as usize - &__sdata as *const u32 as usize;
+    if count > 0 {
+        ptr::copy_nonoverlapping(
+            &__sidata as *const u32 as *const u8,
+            &mut __sdata as *mut u32 as *mut u8,
+            count,
+        );
+    }
+}

@@ -14,10 +14,10 @@ define_header!{
     }
 }
 
-extern_header!(CELL1ABI_wrapper: Cell1);
+extern_header!(CELL1_wrapper: Cell1);
 
 pub fn run_some_code() {
-    if let Some(CELL1_ABI) = CELL1ABI_wrapper::new() {
-        (CELL1_ABI.print_some_value)(CELL1_ABI.a)
+    if let Some(CELL1) = CELL1_wrapper::new() {
+        (CELL1.print_some_value)(CELL1.a)
     }
 }

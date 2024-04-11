@@ -39,7 +39,7 @@ impl ToTokens for EmcellDef {
         };
 
         tokens.extend(quote! {
-            emcell::CellDefMeta {
+            emcell::meta::CellDefMeta {
                 name: #name,
                 cell_type: #cell_type,
                 ram_range_start_offs: #ram_region_start,
@@ -66,7 +66,7 @@ impl ToTokens for EmcellDeviceConfiguration {
         let flash_region_end = self.flash_region.end;
 
         tokens.extend(quote! {
-            emcell::DeviceConfigMeta {
+            emcell::meta::DeviceConfigMeta {
                 initial_stack_ptr: #initial_stack_pointer,
                 ram_range_start: #ram_region_start,
                 ram_range_end: #ram_region_end,
@@ -307,7 +307,7 @@ pub fn emcell_configuration(input: TokenStream) -> TokenStream {
             }
         }
 
-        pub static META: emcell::CellDefsMeta::<#cell_defs_count> = emcell::CellDefsMeta {
+        pub static META: emcell::meta::CellDefsMeta::<#cell_defs_count> = emcell::meta::CellDefsMeta {
             cell_defs: [#(#emcell_defs),*],
             device_configuration: #emcell_device
         };

@@ -40,7 +40,3 @@ bench=false
 
 [patch.crates-io]
 cortex-m-rt = { path="../cortex-m-rt-resetmod" }
-cortex-m= { version="0.7.7", path="../../../contributions/cortex-m"}
-
-defmt-rtt = { version="0.4.0", path="../../../contributions/defmt/firmware/defmt-rtt"}
-defmt = { version="0.3.5", path="../../../contributions/defmt/defmt"}

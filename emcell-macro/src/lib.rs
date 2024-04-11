@@ -31,7 +31,7 @@ pub fn define_header(item: TokenStream) -> TokenStream {
             #[no_mangle]
             #[link_section = #link_section]
             pub static #static_ident : #ident = #ident {
-                init_memory: unsafe { emcell::init_memory},
+                init_memory: unsafe { emcell::device::init_memory},
                 signature: 0xdeadbeef,
                 #fields
             };

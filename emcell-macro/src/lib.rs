@@ -3,15 +3,15 @@ mod defs;
 use proc_macro::{TokenStream};
 use proc_macro2::Ident;
 use quote::{format_ident, quote, ToTokens};
-use syn::{ExprStruct, parse_macro_input, Token};
+use syn::{ExprStruct, parse_macro_input};
 use syn::parse::{Parse, Parser, ParseStream};
 use syn::spanned::Spanned;
-use syn::token::{Colon, Comma};
+use syn::token::{Colon};
 
 
 #[proc_macro]
 pub fn define_header(item: TokenStream) -> TokenStream {
-    let mut input = parse_macro_input!(item as ExprStruct);
+    let input = parse_macro_input!(item as ExprStruct);
     let ident = input.path;
     let ident_str = ident.to_token_stream().to_string().trim_matches('"').to_string();
 
@@ -55,7 +55,7 @@ pub fn define_header(item: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn define_primary_header(item: TokenStream) -> TokenStream {
-    let mut input = parse_macro_input!(item as ExprStruct);
+    let input = parse_macro_input!(item as ExprStruct);
     let ident = input.path;
     let ident_str = ident.to_token_stream().to_string().trim_matches('"').to_string();
 

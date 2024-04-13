@@ -1,9 +1,8 @@
 extern crate std;
 
-use crate::meta;
-use crate::meta::{CellDefMeta, CellDefsMeta, DeviceConfigMeta};
+use crate::meta::{CellDefMeta, DeviceConfigMeta};
 
-const HEADER_SIZE: usize = 1 * 1024;
+const HEADER_SIZE: usize = 1024;
 
 pub struct PartitionedFlashRegion {
     pub start_flash: usize,
@@ -44,7 +43,7 @@ pub fn build_rs<T: crate::Cell + 'static>() {
     let cur_cell_name = cur_cell_meta.name;
     let other_cells_names: std::vec::Vec<&str> = cells_meta.iter().map(|cell| cell.name).filter(|name| *name != cur_cell_name).collect();
 
-    let cur_partitioned_flash_region = PartitionedFlashRegion::from(&cur_cell_meta, &T::DEVICE_CONFIG);
+    let cur_partitioned_flash_region = PartitionedFlashRegion::from(cur_cell_meta, &T::DEVICE_CONFIG);
     let mut memory_definition = String::from("# THIS SCRIPT WAS GENERATED AUTOMATICALLY BY emcell LIBRARY!\nMEMORY {\n")
         // this cell flash definition
         + &std::format!("  FLASH : ORIGIN = 0x{:X}, LENGTH = {}\n",
@@ -60,10 +59,10 @@ pub fn build_rs<T: crate::Cell + 'static>() {
     for cell_meta in cells_meta {
         let cell_name = cell_meta.name;
         let partitioned_flash_region = PartitionedFlashRegion::from(cell_meta, &T::DEVICE_CONFIG);
-        memory_definition += &(String::from(std::format!("  {}_FLASH : ORIGIN = 0x{:X}, LENGTH = {}\n",
+        memory_definition += &(std::format!("  {}_FLASH : ORIGIN = 0x{:X}, LENGTH = {}\n",
                                                          cell_name,
                                                          partitioned_flash_region.start_flash,
-                                                         partitioned_flash_region.end_flash - partitioned_flash_region.start_flash))
+                                                         partitioned_flash_region.end_flash - partitioned_flash_region.start_flash)
             + &std::format!("  {}_HEADER : ORIGIN = 0x{:X}, LENGTH = {}\n",
                             cell_name,
                             partitioned_flash_region.start_header,

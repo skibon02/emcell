@@ -110,7 +110,7 @@ impl Parse for EmcellDeviceConfiguration {
                             syn::Expr::Lit(lit) => {
                                 match &lit.lit {
                                     syn::Lit::Int(int) => {
-                                        parse_integer_lit(&int)
+                                        parse_integer_lit(int)
                                     }
                                     _ => Err(syn::Error::new(lit.span(), "Expected integer literal"))
                                 }

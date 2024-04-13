@@ -1,10 +1,7 @@
 extern crate std;
 
 use crate::meta;
-use crate::meta::{CellDefMeta, CellDefsMeta};
-
-#[cfg(not(feature = "rt-crate-cortex-m-rt"))]
-compile_error!("This crate requires any rt-crate-* to be enabled (when using build-rs feature)! *currently only rt-crate-cortex-m-rt is supported*");
+use crate::meta::{CellDefMeta, CellDefsMeta, DeviceConfigMeta};
 
 const HEADER_SIZE: usize = 1 * 1024;
 
@@ -16,9 +13,9 @@ pub struct PartitionedFlashRegion {
 }
 
 impl PartitionedFlashRegion {
-    pub fn from<const N: usize>(meta: &'static meta::CellDefsMeta<N>, cell_name: &str) -> Self {
-        let start_flash = meta.absolute_flash_start(cell_name);
-        let end_flash = meta.absolute_flash_end(cell_name) - HEADER_SIZE;
+    pub fn from(cell: &'static CellDefMeta, device_config_meta: &DeviceConfigMeta) -> Self {
+        let start_flash = cell.absolute_flash_start(device_config_meta);
+        let end_flash = cell.absolute_flash_end(device_config_meta) - HEADER_SIZE;
 
         let start_header = end_flash;
         let end_header = end_flash + HEADER_SIZE;
@@ -44,7 +41,7 @@ pub fn build_rs<const N: usize>(meta: &'static CellDefsMeta<N>, cur_cell: &'stat
     let cur_cell_name = cur_cell.name;
     let other_cells_names: std::vec::Vec<&str> = meta.cell_defs.iter().map(|cell| cell.name).filter(|name| *name != cur_cell_name).collect();
 
-    let cur_partitioned_flash_region = PartitionedFlashRegion::from(meta, cur_cell_name);
+    let cur_partitioned_flash_region = PartitionedFlashRegion::from(cur_cell, &meta.device_configuration);
     let mut memory_definition = String::from("# THIS SCRIPT WAS GENERATED AUTOMATICALLY BY emcell LIBRARY!\nMEMORY {\n")
         // this cell flash definition
         + &std::format!("  FLASH : ORIGIN = 0x{:X}, LENGTH = {}\n",
@@ -54,11 +51,12 @@ pub fn build_rs<const N: usize>(meta: &'static CellDefsMeta<N>, cur_cell: &'stat
                         cur_partitioned_flash_region.start_header,
                         cur_partitioned_flash_region.end_header - cur_partitioned_flash_region.start_header)
         + &std::format!("  RAM : ORIGIN = 0x{:X}, LENGTH = {}\n\n",
-                        meta.absolute_ram_start(cur_cell_name),
-                        meta.absolute_ram_end(cur_cell_name) - meta.absolute_ram_start(cur_cell_name));
+                        cur_cell.absolute_ram_start(&meta.device_configuration),
+                        cur_cell.absolute_ram_end(&meta.device_configuration) - cur_cell.absolute_ram_start(&meta.device_configuration));
 
     for cell_name in &other_cells_names {
-        let partitioned_flash_region = PartitionedFlashRegion::from(meta, cell_name);
+        let cell_meta = meta.for_cell(cell_name).unwrap();
+        let partitioned_flash_region = PartitionedFlashRegion::from(cell_meta, &meta.device_configuration);
         memory_definition += &(String::from(std::format!("  {}_FLASH : ORIGIN = 0x{:X}, LENGTH = {}\n",
                                                          cell_name,
                                                          partitioned_flash_region.start_flash,
@@ -69,8 +67,8 @@ pub fn build_rs<const N: usize>(meta: &'static CellDefsMeta<N>, cur_cell: &'stat
                             partitioned_flash_region.end_header - partitioned_flash_region.start_header)
             + &std::format!("  {}_RAM : ORIGIN = 0x{:X}, LENGTH = {}\n\n",
                             cell_name,
-                            meta.absolute_ram_start(cell_name),
-                            meta.absolute_ram_end(cell_name) - meta.absolute_ram_start(cell_name)));
+                            cell_meta.absolute_ram_start(&meta.device_configuration),
+                            cell_meta.absolute_ram_end(&meta.device_configuration) - cell_meta.absolute_ram_start(&meta.device_configuration)));
     }
 
     memory_definition += "}\n\n";

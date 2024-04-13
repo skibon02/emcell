@@ -31,10 +31,19 @@ pub fn define_header(item: TokenStream) -> TokenStream {
             #[no_mangle]
             #[link_section = #link_section]
             pub static #static_ident : #ident = #ident {
-                init_memory: unsafe { emcell::device::init_memory},
                 signature: 0xdeadbeef,
+                init: unsafe { __emcell_init },
                 #fields
             };
+
+            unsafe fn __emcell_init(known_sha: [u8; 32]) -> bool {
+                if known_sha != #ident::static_sha256 {
+                    return false;
+                }
+
+                emcell::device::init();
+                true
+            }
         )
     };
 
@@ -59,8 +68,19 @@ pub fn define_primary_header(item: TokenStream) -> TokenStream {
             #[no_mangle]
             #[link_section = #link_section]
             pub static #static_ident : #ident = #ident {
+                signature: 0xbeef_dead,
+                init: unsafe { __emcell_init_primary },
                 #fields
             };
+
+            unsafe fn __emcell_init_primary(known_sha: [u8; 32]) -> bool {
+                if known_sha != #ident::static_sha256 {
+                    return false;
+                }
+
+                emcell::device::init_primary();
+                true
+            }
         )
     };
 
@@ -96,7 +116,6 @@ pub fn extern_header(item: TokenStream) -> TokenStream {
             }
 
             pub type #name = emcell::CellWrapper<#typez>;
-
 
             pub unsafe trait CellWrapperTrait {
                 type CellWrapperType;

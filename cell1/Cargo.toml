@@ -2,7 +2,6 @@
 name = "cell1"
 version = "0.1.0"
 edition = "2021"
-resolver = "2"
 
 [dependencies]
 at32f4xx-pac = { version = "0.2.0", features = ["rt", "cortex-m-rt", "at32f407"] }
@@ -17,11 +16,11 @@ critical-section = { version = "1.1.2", features = ["restore-state-bool"] }
 cortex-m = "0.7.7"
 
 emcell-macro = {path = "../emcell-macro"}
-emcell = { path = "../emcell" }
+emcell = { path = "../emcell"}
 
 [build-dependencies]
 cells_defs = {path = "../cells_defs"}
-emcell = {path = "../emcell", features = ["rt-crate-cortex-m-rt"]}
+emcell = {path = "../emcell", features = ["build-rs"]}
 
 [profile.release]
 debug = true

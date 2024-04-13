@@ -9,4 +9,4 @@ resolver = "2"
 [features]
 default = []
 build-rs = []
-rt-crate-cortex-m-rt = ["build-rs"]
+rt-crate-cortex-m-rt = []

@@ -1,4 +1,14 @@
+pub unsafe fn init() {
+    init_memory();
+}
 
+pub unsafe fn init_primary() {
+}
+
+
+/// Initialize BSS and DATA sections
+/// Should not be called directly! instead, use `init` function from the generated header
+#[cfg(feature = "rt-crate-cortex-m-rt")]
 pub unsafe fn init_memory() {
     use core::ptr;
 
@@ -24,4 +34,3 @@ pub unsafe fn init_memory() {
             count);
     }
 }
-

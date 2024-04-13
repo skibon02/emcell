@@ -1,7 +1,8 @@
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span};
 use quote::{quote, ToTokens};
-use syn::{Data, DataStruct, DeriveInput, ExprMacro, Field, Fields, FieldValue, ItemStruct, LitInt, Member, Meta, parse2, parse_macro_input};
+use sha2::{Digest, Sha256};
+use syn::{Data, DataStruct, DeriveInput, ExprMacro, Field, Fields, FieldValue, ItemStruct, LitInt, Member, Meta, parse2, parse_macro_input, parse_quote};
 use syn::parse::{Parse, Parser, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
@@ -13,6 +14,7 @@ struct EmcellDef {
 
     ram_region: RamRegion,
     flash_region: FlashRegion,
+    struct_sha256: [u8; 32],
 }
 
 impl ToTokens for EmcellDef {
@@ -38,6 +40,9 @@ impl ToTokens for EmcellDef {
             quote! { emcell::CellType::NonPrimary }
         };
 
+        let hash = self.struct_sha256;
+
+
         tokens.extend(quote! {
             emcell::meta::CellDefMeta {
                 name: #name,
@@ -46,6 +51,7 @@ impl ToTokens for EmcellDef {
                 ram_range_end_offs: #ram_region_end,
                 flash_range_start_offs: #flash_region_start,
                 flash_range_end_offs: #flash_region_end,
+                struct_sha256: [#(#hash),*],
             }
         });
     }
@@ -235,11 +241,19 @@ impl Parse for EmcellConfiguration {
                 return Err(syn::Error::new(strukt.span(), "Required attribute #[cell] or #[cell(primary)] missing for struct definition"));
             };
 
+
+            let mut hasher = Sha256::new();
+            let fields = &strukt.fields;
+            hasher.update(fields.to_token_stream().to_string().as_bytes());
+            let hash = hasher.finalize();
+            let struct_sha256 = hash.as_slice().try_into().unwrap();
+
             cells.push(EmcellDef {
                 strukt,
                 is_primary,
                 ram_region,
                 flash_region,
+                struct_sha256
             });
         }
 
@@ -262,26 +276,30 @@ pub fn emcell_configuration(input: TokenStream) -> TokenStream {
 
     let mut cell_names = Vec::new();
     let mut non_primary_cell_idents = Vec::new();
+    let mut non_primary_cell_sha256 = Vec::new();
     let mut primary_cell = None;
     for cell in &emcell_configuration.cells {
         let cell_name = cell.strukt.ident.to_string();
-        cell_names.push(cell_name);
+        cell_names.push(cell_name.clone());
 
         if cell.is_primary {
             primary_cell = Some(cell.strukt.ident.clone());
         }
         else {
             non_primary_cell_idents.push(cell.strukt.ident.clone());
+            let sha256 = cell.struct_sha256;
+            non_primary_cell_sha256.push(quote! { [#(#sha256),*] });
         }
     }
     let primary_cell = primary_cell.unwrap();
+    let primary_cell_sha256 = emcell_configuration.cells.iter().find(|cell| cell.strukt.ident == primary_cell).unwrap().struct_sha256;
 
     let cell_defs_count = cell_names.len();
     let cell_defs_array = quote! {
         pub const CELL_NAMES: [&'static str; #cell_defs_count] = [#(#cell_names),*];
     };
 
-    let emcell_defs = emcell_configuration.cells;
+    let emcell_defs = &emcell_configuration.cells;
     let emcell_device = emcell_configuration.device;
     let output = proc_macro2::TokenStream::from(output);
     let output = quote! {
@@ -292,22 +310,38 @@ pub fn emcell_configuration(input: TokenStream) -> TokenStream {
 
         #(unsafe impl emcell::Cell for #non_primary_cell_idents {
             fn check_signature(&self) -> bool {
-                let sig_valid = self.signature == 0xdeadbeef;
-
-                if sig_valid {
-                    unsafe {(self.init_memory)()}
+                if self.signature != 0xdeadbeef {
+                    return false;
                 }
-                sig_valid
+
+                let known_sha256 = #non_primary_cell_sha256;
+                let sha_ok = unsafe {(self.init)(known_sha256)};
+                return sha_ok;
             }
+        })*
+
+        #(impl #non_primary_cell_idents {
+            pub const static_sha256: [u8; 32] = #non_primary_cell_sha256;
         })*
 
         unsafe impl emcell::Cell for #primary_cell {
             fn check_signature(&self) -> bool {
-                true
+                if self.signature != 0xbeefdead {
+                    return false;
+                }
+
+                let known_sha256 = [#(#primary_cell_sha256),*];
+                let sha_ok = unsafe {(self.init)(known_sha256)};
+                return sha_ok;
             }
         }
 
-        pub static META: emcell::meta::CellDefsMeta::<#cell_defs_count> = emcell::meta::CellDefsMeta {
+        impl #primary_cell {
+            pub const static_sha256: [u8; 32] = [#(#primary_cell_sha256),*];
+        }
+
+
+        pub const META: emcell::meta::CellDefsMeta::<#cell_defs_count> = emcell::meta::CellDefsMeta {
             cell_defs: [#(#emcell_defs),*],
             device_configuration: #emcell_device
         };
@@ -406,12 +440,15 @@ impl Parse for FlashRegion {
 }
 
 pub fn cell(cell_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let mut input = parse_macro_input!(item as DeriveInput);
+    let mut header_struct = parse_macro_input!(item as DeriveInput);
 
     let attr_list = parse_macro_input!(cell_attr as CellAttribParams);
 
+    // enforce C abi
+    header_struct.attrs.push(parse_quote! { #[repr(C)] });
+
     // Extract the struct fields
-    let fields = match &mut input.data {
+    let fields = match &mut header_struct.data {
         Data::Struct(DataStruct { fields: Fields::Named(fields), .. }) => fields,
         _ => {
             return TokenStream::from(
@@ -421,21 +458,22 @@ pub fn cell(cell_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
-    // Add the "init_memory" and "signature" fields if "primary" is not present
-    if !attr_list.is_primary {
-        let init_memory_field = Field::parse_named
-            .parse2(quote! { pub init_memory: unsafe fn() })
-            .unwrap();
-        fields.named.push(init_memory_field);
+    // signature helps us ensure that our abi is indeed located at the correct address
+    //
+    // Also we assume that if signature is present and valid, we can call init() function safely
+    // because it is guaranteed to preserve memory location (with repr C) even if header fields were changed
+    let signature_field = Field::parse_named
+        .parse2(quote! { pub signature: u32 })
+        .unwrap();
+    fields.named.insert(0, signature_field);
 
-        let signature_field = Field::parse_named
-            .parse2(quote! { pub signature: u32 })
-            .unwrap();
-        fields.named.push(signature_field);
-    }
+    let init_field = Field::parse_named
+        .parse2(quote! { pub init: unsafe fn([u8; 32]) -> bool })
+        .unwrap();
+    fields.named.insert(1, init_field);
 
     let output = quote! {
-        #input
+        #header_struct
     };
 
     TokenStream::from(output)

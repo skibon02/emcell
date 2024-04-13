@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 emcell-macro = { path = "../emcell-macro" }
-emcell = {path = "../emcell"}
+emcell = {path = "../emcell", features = ["rt-crate-cortex-m-rt"]}
 
 [features]
 default = []

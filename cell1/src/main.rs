@@ -23,7 +23,7 @@ define_primary_header!{
     }
 }
 
-extern_header!(CELL2_wrapper: Cell2);
+extern_header!(Cell2Wrapper: Cell2);
 
 const EOPB0_ADDR: *mut u8 = 0x1fff_f810 as *mut u8;
 
@@ -58,7 +58,7 @@ unsafe fn main() -> ! {
     }
 
 
-    if let Some(cell2) = CELL2_wrapper::new() {
+    if let Some(cell2) = Cell2Wrapper::new() {
         info!("cell1: b from cell2: {}", cell2.b);
         (cell2.run_some_code)();
         info!("cell1: Accessing static...");

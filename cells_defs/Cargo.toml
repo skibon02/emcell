@@ -9,3 +9,7 @@ emcell = {path = "../emcell", features = ["rt-crate-cortex-m-rt"]}
 
 [features]
 default = []
+
+[lib]
+test = false
+bench = false

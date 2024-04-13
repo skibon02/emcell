@@ -1,10 +1,6 @@
 use core::cell::UnsafeCell;
 use core::ops::{Deref, DerefMut};
 use core::sync::atomic::AtomicUsize;
-use cortex_m::interrupt::CriticalSection;
-use cortex_m::peripheral::SCB;
-use defmt::{Debug2Format, unwrap};
-use crate::critical_section::all_interrupt_free;
 
 /// Make inner data safe to use from all exceptions including SysTick (but not HardFault).
 pub struct FullMutex<T> {

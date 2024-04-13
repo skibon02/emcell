@@ -4,8 +4,7 @@ use proc_macro::{TokenStream};
 use proc_macro2::Ident;
 use quote::{format_ident, quote, ToTokens};
 use syn::{ExprStruct, parse_macro_input};
-use syn::parse::{Parse, Parser, ParseStream};
-use syn::spanned::Spanned;
+use syn::parse::{Parse, ParseStream};
 use syn::token::{Colon};
 
 
@@ -120,12 +119,18 @@ pub fn extern_header(item: TokenStream) -> TokenStream {
 
             pub type #name = emcell::CellWrapper<#typez>;
 
+            /// #Safety
+            /// Marked unsafe because should not be used by the user!
+            /// Only for code generation usage
             pub unsafe trait CellWrapperTrait {
                 type CellWrapperType;
                 fn new() -> Option<Self::CellWrapperType>;
                 fn new_uninit() -> Self::CellWrapperType;
             }
 
+            /// #Safety
+            /// Marked unsafe because should not be used by the user!
+            /// Only for code generation usage
             unsafe impl CellWrapperTrait for #name {
                 type CellWrapperType = #name;
 

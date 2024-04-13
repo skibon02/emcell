@@ -428,10 +428,8 @@ impl Parse for FlashRegion {
     }
 }
 
-pub fn cell(cell_attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn cell(_cell_attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut header_struct = parse_macro_input!(item as DeriveInput);
-
-    let attr_list = parse_macro_input!(cell_attr as CellAttribParams);
 
     // enforce C abi
     header_struct.attrs.push(parse_quote! { #[repr(C)] });

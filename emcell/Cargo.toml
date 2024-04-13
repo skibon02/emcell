@@ -10,3 +10,7 @@ resolver = "2"
 default = []
 build-rs = []
 rt-crate-cortex-m-rt = []
+
+[lib]
+test = false
+bench = false

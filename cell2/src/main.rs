@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use emcell_macro::{define_header, define_primary_header, extern_header};
+use emcell_macro::{define_header, extern_header};
 use cells_defs::{Cell1, Cell2};
 
 extern crate panic_halt;
@@ -15,10 +15,10 @@ define_header!{
     }
 }
 
-extern_header!(CELL1_wrapper: Cell1);
+extern_header!(Cell1Wrapper: Cell1);
 
 pub fn run_some_code() {
-    if let Some(cell1) = CELL1_wrapper::new() {
+    if let Some(cell1) = Cell1Wrapper::new() {
         (cell1.print_some_value)(cell1.a)
     }
 }

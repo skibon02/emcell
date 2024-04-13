@@ -43,7 +43,7 @@ pub unsafe trait Cell {
 pub struct CellWrapper<T>
 where T: 'static {
     header: &'static T,
-    state: HeaderType,
+    pub state: HeaderType,
     is_init: AtomicBool,
 }
 
@@ -68,7 +68,7 @@ impl<T> CellWrapper<T>
 where T: Cell + 'static {
     pub const unsafe fn _new_uninit(h: &'static T) -> Self {
         Self {
-            header: unsafe { h },
+            header: h,
             state: HeaderType::Actual,
             is_init: AtomicBool::new(false),
         }
@@ -80,7 +80,7 @@ where T: Cell + 'static {
         }
 
         Some(Self {
-            header: unsafe { h },
+            header: h,
             state: HeaderType::Actual,
             is_init: AtomicBool::new(true),
         })

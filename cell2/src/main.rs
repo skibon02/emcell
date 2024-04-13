@@ -7,7 +7,6 @@ use cells_defs::{Cell1, Cell2};
 extern crate panic_halt;
 extern crate at32f4xx_pac;
 
-
 define_header!{
     Cell2 {
         b: 23,
@@ -19,8 +18,8 @@ define_header!{
 extern_header!(CELL1_wrapper: Cell1);
 
 pub fn run_some_code() {
-    if let Some(CELL1) = CELL1_wrapper::new() {
-        (CELL1.print_some_value)(CELL1.a)
+    if let Some(cell1) = CELL1_wrapper::new() {
+        (cell1.print_some_value)(cell1.a)
     }
 }
 

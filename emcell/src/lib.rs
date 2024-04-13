@@ -17,6 +17,7 @@ pub mod meta;
 #[cfg(not(feature = "build-rs"))]
 pub mod device;
 
+#[derive(Copy, Clone)]
 pub enum CellType {
     Primary,
     NonPrimary
@@ -28,7 +29,13 @@ pub enum HeaderType {
 }
 
 pub unsafe trait Cell {
+    const CUR_META: meta::CellDefMeta;
+    const CELLS_META: &'static [meta::CellDefMeta];
+    const DEVICE_CONFIG: meta::DeviceConfigMeta;
     fn check_signature(&self) -> bool;
+    fn static_sha256(&self) -> [u8; 32] {
+        Self::CUR_META.struct_sha256
+    }
 }
 
 /// Safe cell header wrapper.

@@ -6,6 +6,7 @@ use quote::{format_ident, quote, ToTokens};
 use syn::{ExprStruct, parse_macro_input, Token};
 use syn::parse::{Parse, Parser, ParseStream};
 use syn::spanned::Spanned;
+use syn::token::{Colon, Comma};
 
 
 #[proc_macro]
@@ -37,7 +38,7 @@ pub fn define_header(item: TokenStream) -> TokenStream {
             };
 
             unsafe fn __emcell_init(known_sha: [u8; 32]) -> bool {
-                if known_sha != #ident::static_sha256 {
+                if known_sha != <#ident as emcell::Cell>::CUR_META.struct_sha256 {
                     return false;
                 }
 
@@ -74,7 +75,7 @@ pub fn define_primary_header(item: TokenStream) -> TokenStream {
             };
 
             unsafe fn __emcell_init_primary(known_sha: [u8; 32]) -> bool {
-                if known_sha != #ident::static_sha256 {
+                if known_sha != <#ident as emcell::Cell>::CUR_META.struct_sha256 {
                     return false;
                 }
 
@@ -94,8 +95,10 @@ struct ExternHeader {
 
 impl Parse for ExternHeader {
     fn parse(input: ParseStream) -> syn::Result<Self> {
+        // let cells_meta_ident: Ident = input.parse()?;
+        // let _: Comma = input.parse()?;
         let left: Ident = input.parse()?;
-        let _: Token![:] = input.parse()?;
+        let _: Colon = input.parse()?;
         let right: Ident = input.parse()?;
 
         Ok(ExternHeader { name: left, typez: right })
@@ -138,9 +141,6 @@ pub fn extern_header(item: TokenStream) -> TokenStream {
             }
         )
     };
-
-    // let tokens: Vec<_> = input.into_iter().collect();
-    // println!("tokens: {:?}", tokens);
 
     proc_macro::TokenStream::from(output)
 }

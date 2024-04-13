@@ -19,15 +19,6 @@ struct EmcellDef {
 
 impl ToTokens for EmcellDef {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
-        // // generate fields for the struct
-        // let fields = self.strukt.fields.iter().map(|field| {
-        //     let ident = &field.ident;
-        //     let ty = &field.ty;
-        //     quote! {
-        //         #ident: core::option::Option<#ty>
-        //     }
-        // });
-
         let name = self.strukt.ident.to_string();
         let ram_region_start = self.ram_region.start;
         let ram_region_end = self.ram_region.end;
@@ -275,76 +266,74 @@ pub fn emcell_configuration(input: TokenStream) -> TokenStream {
     let emcell_configuration = parse_macro_input!(input as EmcellConfiguration);
 
     let mut cell_names = Vec::new();
+    let mut non_primary_cells = Vec::new();
     let mut non_primary_cell_idents = Vec::new();
-    let mut non_primary_cell_sha256 = Vec::new();
+    let mut non_primary_cell_indices = Vec::new();
     let mut primary_cell = None;
-    for cell in &emcell_configuration.cells {
+    let mut primary_cell_index = 0;
+    for (i, cell) in emcell_configuration.cells.iter().enumerate() {
         let cell_name = cell.strukt.ident.to_string();
         cell_names.push(cell_name.clone());
 
         if cell.is_primary {
-            primary_cell = Some(cell.strukt.ident.clone());
+            primary_cell = Some(cell);
+            primary_cell_index = i;
         }
         else {
+            non_primary_cells.push(cell);
             non_primary_cell_idents.push(cell.strukt.ident.clone());
-            let sha256 = cell.struct_sha256;
-            non_primary_cell_sha256.push(quote! { [#(#sha256),*] });
+            non_primary_cell_indices.push(i);
         }
     }
     let primary_cell = primary_cell.unwrap();
-    let primary_cell_sha256 = emcell_configuration.cells.iter().find(|cell| cell.strukt.ident == primary_cell).unwrap().struct_sha256;
+    let primary_cell_ident = &primary_cell.strukt.ident;
 
-    let cell_defs_count = cell_names.len();
-    let cell_defs_array = quote! {
-        pub const CELL_NAMES: [&'static str; #cell_defs_count] = [#(#cell_names),*];
-    };
+    let cell_count = cell_names.len();
 
     let emcell_defs = &emcell_configuration.cells;
     let emcell_device = emcell_configuration.device;
     let output = proc_macro2::TokenStream::from(output);
     let output = quote! {
         #output
-        #cell_defs_array
 
-        pub type PrimaryCell = #primary_cell;
+        pub type PrimaryCell = #primary_cell_ident;
 
         #(unsafe impl emcell::Cell for #non_primary_cell_idents {
+            const CUR_META: emcell::meta::CellDefMeta = META.cell_defs[#non_primary_cell_indices];
+            const DEVICE_CONFIG: emcell::meta::DeviceConfigMeta = META.device_configuration;
+            const CELLS_META: &'static [emcell::meta::CellDefMeta] = &META.cell_defs;
             fn check_signature(&self) -> bool {
                 if self.signature != 0xdeadbeef {
                     return false;
                 }
 
-                let known_sha256 = #non_primary_cell_sha256;
+                let known_sha256 = Self::CUR_META.struct_sha256;
                 let sha_ok = unsafe {(self.init)(known_sha256)};
                 return sha_ok;
             }
         })*
 
-        #(impl #non_primary_cell_idents {
-            pub const static_sha256: [u8; 32] = #non_primary_cell_sha256;
-        })*
-
-        unsafe impl emcell::Cell for #primary_cell {
+        unsafe impl emcell::Cell for #primary_cell_ident {
+            const CUR_META: emcell::meta::CellDefMeta = META.cell_defs[#primary_cell_index];
+            const DEVICE_CONFIG: emcell::meta::DeviceConfigMeta  = META.device_configuration;
+            const CELLS_META: &'static [emcell::meta::CellDefMeta] = &META.cell_defs;
             fn check_signature(&self) -> bool {
                 if self.signature != 0xbeefdead {
                     return false;
                 }
 
-                let known_sha256 = [#(#primary_cell_sha256),*];
+                let known_sha256 = Self::CUR_META.struct_sha256;
                 let sha_ok = unsafe {(self.init)(known_sha256)};
                 return sha_ok;
             }
         }
 
-        impl #primary_cell {
-            pub const static_sha256: [u8; 32] = [#(#primary_cell_sha256),*];
-        }
-
-
-        pub const META: emcell::meta::CellDefsMeta::<#cell_defs_count> = emcell::meta::CellDefsMeta {
+        pub const META: emcell::meta::CellDefsMeta::<#cell_count> = emcell::meta::CellDefsMeta {
             cell_defs: [#(#emcell_defs),*],
             device_configuration: #emcell_device
         };
+
+        pub const CELL_COUNT: usize = #cell_count;
     };
 
     TokenStream::from(output)

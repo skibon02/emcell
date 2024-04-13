@@ -22,20 +22,7 @@ emcell = { path = "../emcell"}
 cells_defs = {path = "../cells_defs"}
 emcell = {path = "../emcell", features = ["build-rs"]}
 
-[profile.release]
-debug = true
-codegen-units = 1
-lto = true
-opt-level = 3
-
-[profile.dev]
-opt-level = 1
-lto = true
-
 [[bin]]
 name="cell1"
 test=false
 bench=false
-
-[patch.crates-io]
-cortex-m-rt = { path="../cortex-m-rt-resetmod" }

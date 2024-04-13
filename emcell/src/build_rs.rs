@@ -13,7 +13,7 @@ pub struct PartitionedFlashRegion {
 }
 
 impl PartitionedFlashRegion {
-    pub fn from(cell: &'static CellDefMeta, device_config_meta: &DeviceConfigMeta) -> Self {
+    pub fn from(cell: &CellDefMeta, device_config_meta: &DeviceConfigMeta) -> Self {
         let start_flash = cell.absolute_flash_start(device_config_meta);
         let end_flash = cell.absolute_flash_end(device_config_meta) - HEADER_SIZE;
 
@@ -29,7 +29,10 @@ impl PartitionedFlashRegion {
     }
 }
 #[cfg(feature = "rt-crate-cortex-m-rt")]
-pub fn build_rs<const N: usize>(meta: &'static CellDefsMeta<N>, cur_cell: &'static CellDefMeta) {
+pub fn build_rs<T: crate::Cell + 'static>() {
+    let cells_meta = T::CELLS_META;
+    let cur_cell_meta = &T::CUR_META;
+
     use std::env;
     use std::fs::File;
     use std::io::Write;
@@ -38,10 +41,10 @@ pub fn build_rs<const N: usize>(meta: &'static CellDefsMeta<N>, cur_cell: &'stat
 
     let out_dir = &PathBuf::from(env::var("OUT_DIR").unwrap());
 
-    let cur_cell_name = cur_cell.name;
-    let other_cells_names: std::vec::Vec<&str> = meta.cell_defs.iter().map(|cell| cell.name).filter(|name| *name != cur_cell_name).collect();
+    let cur_cell_name = cur_cell_meta.name;
+    let other_cells_names: std::vec::Vec<&str> = cells_meta.iter().map(|cell| cell.name).filter(|name| *name != cur_cell_name).collect();
 
-    let cur_partitioned_flash_region = PartitionedFlashRegion::from(cur_cell, &meta.device_configuration);
+    let cur_partitioned_flash_region = PartitionedFlashRegion::from(&cur_cell_meta, &T::DEVICE_CONFIG);
     let mut memory_definition = String::from("# THIS SCRIPT WAS GENERATED AUTOMATICALLY BY emcell LIBRARY!\nMEMORY {\n")
         // this cell flash definition
         + &std::format!("  FLASH : ORIGIN = 0x{:X}, LENGTH = {}\n",
@@ -51,12 +54,12 @@ pub fn build_rs<const N: usize>(meta: &'static CellDefsMeta<N>, cur_cell: &'stat
                         cur_partitioned_flash_region.start_header,
                         cur_partitioned_flash_region.end_header - cur_partitioned_flash_region.start_header)
         + &std::format!("  RAM : ORIGIN = 0x{:X}, LENGTH = {}\n\n",
-                        cur_cell.absolute_ram_start(&meta.device_configuration),
-                        cur_cell.absolute_ram_end(&meta.device_configuration) - cur_cell.absolute_ram_start(&meta.device_configuration));
+                        cur_cell_meta.absolute_ram_start(&T::DEVICE_CONFIG),
+                        cur_cell_meta.absolute_ram_end(&T::DEVICE_CONFIG) - cur_cell_meta.absolute_ram_start(&T::DEVICE_CONFIG));
 
-    for cell_name in &other_cells_names {
-        let cell_meta = meta.for_cell(cell_name).unwrap();
-        let partitioned_flash_region = PartitionedFlashRegion::from(cell_meta, &meta.device_configuration);
+    for cell_meta in cells_meta {
+        let cell_name = cell_meta.name;
+        let partitioned_flash_region = PartitionedFlashRegion::from(cell_meta, &T::DEVICE_CONFIG);
         memory_definition += &(String::from(std::format!("  {}_FLASH : ORIGIN = 0x{:X}, LENGTH = {}\n",
                                                          cell_name,
                                                          partitioned_flash_region.start_flash,
@@ -67,13 +70,13 @@ pub fn build_rs<const N: usize>(meta: &'static CellDefsMeta<N>, cur_cell: &'stat
                             partitioned_flash_region.end_header - partitioned_flash_region.start_header)
             + &std::format!("  {}_RAM : ORIGIN = 0x{:X}, LENGTH = {}\n\n",
                             cell_name,
-                            cell_meta.absolute_ram_start(&meta.device_configuration),
-                            cell_meta.absolute_ram_end(&meta.device_configuration) - cell_meta.absolute_ram_start(&meta.device_configuration)));
+                            cur_cell_meta.absolute_ram_start(&T::DEVICE_CONFIG),
+                            cur_cell_meta.absolute_ram_end(&T::DEVICE_CONFIG) - cur_cell_meta.absolute_ram_start(&T::DEVICE_CONFIG)));
     }
 
     memory_definition += "}\n\n";
 
-    memory_definition += std::format!("_stack_start = 0x{:X};\n\n", meta.device_configuration.initial_stack_ptr).as_str();
+    memory_definition += std::format!("_stack_start = 0x{:X};\n\n", T::DEVICE_CONFIG.initial_stack_ptr).as_str();
 
     memory_definition += "SECTIONS {\n";
     // this cell header

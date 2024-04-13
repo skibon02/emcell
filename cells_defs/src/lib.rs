@@ -27,7 +27,7 @@ emcell_configuration! {
     #[flash_region(0x8_0000, 0x10_0000)]
     pub struct Cell2 {
         pub b: u32,
-        pub run_some_code: fn(),
         pub access_static: fn() -> u32,
+        pub run_some_code: fn(),
     }
 }

@@ -59,9 +59,11 @@ unsafe fn main() -> ! {
 
 
     if let Some(cell2) = CELL2_wrapper::new() {
-        info!("b from cell2: {}", cell2.b);
+        info!("cell1: b from cell2: {}", cell2.b);
         (cell2.run_some_code)();
-        info!("ok");
+        info!("cell1: Accessing static...");
+        let v = (cell2.access_static)();
+        info!("cell1: static value: 0x{:X}", v);
     }
     else {
         error!("CELL2 signature is not valid!");

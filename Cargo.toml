@@ -1,0 +1,27 @@
+[workspace]
+resolver = "2"
+members = [
+"cell1",
+"cell2",
+"emcell-macro",
+"cells_defs",
+"emcell"
+]
+exclude = ["cortex-m-rt-resetmod"]
+
+[profile.release-strip]
+inherits = "release"
+strip = true
+debug = false
+
+[profile.release]
+debug = true
+codegen-units = 1
+lto = true
+
+[profile.dev]
+opt-level = 1
+lto = true
+
+[patch.crates-io]
+cortex-m-rt = { path="cortex-m-rt-resetmod" }

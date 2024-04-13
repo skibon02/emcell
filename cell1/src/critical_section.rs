@@ -1,9 +1,11 @@
+#![allow(dead_code)]
 use core::sync::atomic::AtomicBool;
 use cortex_m::interrupt;
 use cortex_m::interrupt::CriticalSection;
 use cortex_m::register::primask;
 use critical_section::{set_impl, Impl, RawRestoreState};
 use crate::mutex::FullMutex;
+
 
 
 pub(crate) struct SingleCoreCriticalSection;

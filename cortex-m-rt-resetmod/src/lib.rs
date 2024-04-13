@@ -447,6 +447,7 @@ extern crate cortex_m_rt_macros as macros;
 #[cfg(cortex_m)]
 use core::arch::global_asm;
 use core::fmt;
+use core::ptr::addr_of_mut;
 
 // HardFault exceptions are bounced through this trampoline which grabs the stack pointer at
 // the time of the exception and passes it to the user's HardFault handler in r0.
@@ -1028,7 +1029,7 @@ pub fn heap_start() -> *mut u32 {
         static mut __sheap: u32;
     }
 
-    unsafe { &mut __sheap }
+    unsafe { addr_of_mut!(__sheap) }
 }
 
 // Entry point is Reset.

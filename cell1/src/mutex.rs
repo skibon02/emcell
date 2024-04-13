@@ -1,6 +1,9 @@
+#![allow(dead_code)]
+
 use core::cell::UnsafeCell;
 use core::ops::{Deref, DerefMut};
 use core::sync::atomic::AtomicUsize;
+
 
 /// Make inner data safe to use from all exceptions including SysTick (but not HardFault).
 pub struct FullMutex<T> {

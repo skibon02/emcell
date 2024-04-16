@@ -1,8 +1,9 @@
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span};
-use quote::{quote, ToTokens};
+use quote::{format_ident, quote, ToTokens};
 use sha2::{Digest, Sha256};
-use syn::{Data, DataStruct, DeriveInput, ExprMacro, Field, Fields, FieldValue, ItemStruct, LitInt, Member, Meta, parse2, parse_macro_input, parse_quote};
+use sha2::digest::typenum::private::IsNotEqualPrivate;
+use syn::{Data, DataStruct, DeriveInput, ExprMacro, Field, Fields, FieldValue, ItemStruct, LitInt, Member, Meta, parse2, parse_macro_input, parse_quote, Type, Visibility};
 use syn::parse::{Parse, Parser, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
@@ -435,7 +436,7 @@ pub fn cell(_cell_attr: TokenStream, item: TokenStream) -> TokenStream {
     header_struct.attrs.push(parse_quote! { #[repr(C)] });
 
     // Extract the struct fields
-    let fields = match &mut header_struct.data {
+    let mut fields = match &mut header_struct.data {
         Data::Struct(DataStruct { fields: Fields::Named(fields), .. }) => fields,
         _ => {
             return TokenStream::from(
@@ -444,6 +445,34 @@ pub fn cell(_cell_attr: TokenStream, item: TokenStream) -> TokenStream {
             );
         }
     };
+
+    let mut switch_vectors_fn_ident = None;
+    for field in fields.named.iter_mut() {
+        for (i, attr) in field.attrs.iter().enumerate() {
+            if attr.meta.path().is_ident("switch_vectors") {
+                field.attrs.remove(i);
+                //check signature to be fn() -> !
+                let sig = &mut field.ty;
+                let Some(ident) = field.ident.as_mut() else {
+                    return TokenStream::from(
+                        syn::Error::new(field.span(), "Expected named field")
+                            .to_compile_error(),
+                    );
+                };
+
+                let true_sig: Type = parse_quote! { fn() -> ! };
+                if sig.to_token_stream().to_string() != true_sig.to_token_stream().to_string() {
+                    return TokenStream::from(
+                        syn::Error::new(ident.span(), "Expected function signature fn() -> !")
+                            .to_compile_error(),
+                    );
+                }
+
+                switch_vectors_fn_ident = Some(ident.clone());
+                break;
+            }
+        }
+    }
 
     // signature helps us ensure that our abi is indeed located at the correct address
     //
@@ -459,11 +488,50 @@ pub fn cell(_cell_attr: TokenStream, item: TokenStream) -> TokenStream {
         .unwrap();
     fields.named.insert(1, init_field);
 
+
+    let header_ident = &header_struct.ident;
+
+    let impl_decl = if let Some(switch_vectors_fn_ident) = switch_vectors_fn_ident {
+        let switch_vectors = Field::parse_named
+            .parse2(quote! { pub _emcell_internal_switch_vectors: unsafe fn() })
+            .unwrap();
+        fields.named.insert(2, switch_vectors);
+
+        quote! {
+
+            impl #header_ident {
+                pub fn switch_vectors_and_run(&self) -> ! {
+                    unsafe {(self._emcell_internal_switch_vectors)()};
+                    (self.#switch_vectors_fn_ident)()
+                }
+            }
+        }
+    } else {
+        quote! {}
+    };
+
+
     let output = quote! {
         #header_struct
+
+        #impl_decl
     };
 
     TokenStream::from(output)
+}
+
+/// switch_vectors macro attribute is a way of declaring function in a cell header with a signature () -> !
+///
+/// This function provides additional code generation for interrupt vector switching to ones declared in other cell
+///
+/// # Warning
+/// Do not forget to deinitialize everything you don't need before calling this function!
+/// E.g. disabling unused interrupts, resetting peripheral to default state, etc.
+///
+/// If run is the only function to be called in other cell, it is allowed to overlap ram regions, considering full
+/// deinitialization and resetting all the peripherals before calling run().
+pub fn switch_vectors(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    item
 }
 
 //dummy ram_region
@@ -475,7 +543,6 @@ pub fn ram_region(_attr: TokenStream, item: TokenStream) -> TokenStream {
 pub fn flash_region(_attr: TokenStream, item: TokenStream) -> TokenStream {
     item
 }
-
 
 pub fn device(_item: TokenStream) -> TokenStream {
     TokenStream::new()

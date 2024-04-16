@@ -5,11 +5,12 @@ edition = "2021"
 resolver = "2"
 
 [dependencies]
+cortex-m = {version = "0.7.7", optional = true }
 
 [features]
 default = []
 build-rs = []
-rt-crate-cortex-m-rt = []
+rt-crate-cortex-m-rt = ["cortex-m"]
 
 [lib]
 test = false

@@ -124,7 +124,11 @@ pub fn extern_header(item: TokenStream) -> TokenStream {
             /// Only for code generation usage
             pub unsafe trait CellWrapperTrait {
                 type CellWrapperType;
+                /// #Safety
+                /// CellWrapper can be constructed ONLY if this cell is used by exactly one other cell project
                 fn new() -> Option<Self::CellWrapperType>;
+                /// #Safety
+                /// CellWrapper can be constructed ONLY if this cell is used by exactly one other cell project
                 fn new_uninit() -> Self::CellWrapperType;
             }
 
@@ -165,6 +169,13 @@ pub fn ram_region(attr: TokenStream, item: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn flash_region(attr: TokenStream, item: TokenStream) -> TokenStream {
     defs::flash_region(attr, item)
+}
+
+/// Declare header function with signature fn() -> !, which use additional generated code for
+/// switching interrupt vectors to the ones from the cell
+#[proc_macro_attribute]
+pub fn switch_vectors(attr: TokenStream, item: TokenStream) -> TokenStream {
+    defs::switch_vectors(attr, item)
 }
 
 #[proc_macro]

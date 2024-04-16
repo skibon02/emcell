@@ -52,7 +52,6 @@ dependencies = [
  "cells_defs",
  "cortex-m",
  "cortex-m-rt",
- "critical-section",
  "defmt",
  "defmt-rtt",
  "emcell",
@@ -66,6 +65,7 @@ version = "0.1.0"
 dependencies = [
  "at32f4xx-pac",
  "cells_defs",
+ "cortex-m",
  "cortex-m-rt",
  "emcell",
  "emcell-macro",
@@ -94,6 +94,7 @@ checksum = "8ec610d8f49840a5b376c69663b6369e71f4b34484b9b2eb29fb918d92516cb9"
 dependencies = [
  "bare-metal",
  "bitfield",
+ "critical-section",
  "embedded-hal",
  "volatile-register",
 ]
@@ -204,6 +205,9 @@ dependencies = [
 [[package]]
 name = "emcell"
 version = "0.1.0"
+dependencies = [
+ "cortex-m",
+]
 
 [[package]]
 name = "emcell-macro"

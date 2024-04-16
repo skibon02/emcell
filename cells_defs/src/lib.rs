@@ -29,5 +29,7 @@ emcell_configuration! {
         pub b: u32,
         pub access_static: fn() -> u32,
         pub run_some_code: fn(),
+        #[switch_vectors]
+        pub run: fn() -> !
     }
 }

@@ -12,6 +12,7 @@ panic-halt = "0.2.0"
 
 emcell-macro = {path = "../emcell-macro"}
 emcell = { path = "../emcell" }
+cortex-m = "0.7.7"
 
 [build-dependencies]
 cells_defs = {path = "../cells_defs"}

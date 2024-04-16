@@ -35,3 +35,16 @@ pub unsafe fn init_memory() {
             count);
     }
 }
+
+#[cfg(feature = "rt-crate-cortex-m-rt")]
+pub unsafe fn switch_vectors() {
+    extern "C" {
+        static mut __vector_table: u32;
+    }
+    let vector_table = addr_of_mut!(__vector_table) as *mut u32;
+
+    let scb = unsafe {&*cortex_m::peripheral::SCB::PTR};
+
+    // let vtor = scb.vtor.read() as *mut u32;
+    scb.vtor.write(vector_table as u32);
+}

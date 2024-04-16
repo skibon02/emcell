@@ -1,11 +1,8 @@
 #![no_std]
 #![no_main]
 
-mod critical_section;
-mod mutex;
-
 use core::slice::from_raw_parts;
-use at32f4xx_pac::at32f407::{CRM, GPIOC, gpioc};
+use at32f4xx_pac::at32f407::{CRM, GPIOC, gpioc, gpioe};
 use defmt::{error, info, warn};
 use emcell_macro::{define_primary_header, extern_header};
 use cells_defs::{Cell1, Cell2};
@@ -33,25 +30,10 @@ fn is_extended_memory() -> bool {
 
 #[cortex_m_rt::entry]
 unsafe fn main() -> ! {
-    let crm = CRM::steal();
-    crm.apb2en().modify(|_, w| w.gpioc().set_bit());
-
-    let gpioc = GPIOC::steal();
-    gpioc.cfglr().modify(|_, w| w.iofc0().variant(gpioc::cfglr::IOFC0_A::PullDownPullUp)
-        .iomc0().variant(gpioc::cfglr::IOMC0_A::Input));
-    gpioc.odt().write(|w| w.odt0().high());
-    
-    while !gpioc.idt().read().idt0().bit() {}
-    info!("Primary cell started!");
 
     if !is_extended_memory() {
         warn!("Extended memory is not unlocked!");
         loop {
-            let bit = gpioc.idt().read().idt0().bit();
-            if !bit {
-                SCB::sys_reset();
-            }
-
             delay(1_000_000);
         }
 
@@ -64,17 +46,15 @@ unsafe fn main() -> ! {
         info!("cell1: Accessing static...");
         let v = (cell2.access_static)();
         info!("cell1: static value: 0x{:X}", v);
+
+        cell2.switch_vectors_and_run()
     }
     else {
         error!("CELL2 signature is not valid!");
-    }
-    loop {
-        let bit = gpioc.idt().read().idt0().bit();
-        if !bit {
-            SCB::sys_reset();
-        }
 
-        delay(1_000_000);
+        loop {
+            delay(1_000_000);
+        }
     }
 }
 
@@ -87,6 +67,7 @@ unsafe fn pre_init() {
     let flash = at32f4xx_pac::at32f407::FLASH::steal();
 
     if is_extended_memory() {
+        
     }
     else {
         flash.unlock().write(|w| w.ukval().variant(FLASH_UNLOCK_KEY1));

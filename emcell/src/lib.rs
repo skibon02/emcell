@@ -95,7 +95,7 @@ where T: Cell + 'static {
         Some(())
     }
 
-    pub fn new_dummy(dummy_abi: &'static T) -> Self {
+    pub const fn new_dummy(dummy_abi: &'static T) -> Self {
         Self {
             header: dummy_abi,
             state: HeaderType::Dummy,

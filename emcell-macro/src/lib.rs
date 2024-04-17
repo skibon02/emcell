@@ -135,6 +135,12 @@ pub fn extern_header(item: TokenStream) -> TokenStream {
                         inner
                     }
                 }
+
+                const fn new_dummy(dummy_header: &'static #typez) -> Self {
+                    Self {
+                        inner: emcell::CellWrapper::new_dummy(dummy_header)
+                    }
+                }
             }
 
             impl core::ops::Deref for #name {

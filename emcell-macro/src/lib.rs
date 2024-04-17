@@ -22,11 +22,8 @@ pub fn define_header(item: TokenStream) -> TokenStream {
 
     let output: proc_macro2::TokenStream = {
         quote!(
-            #[no_mangle]
-            #[export_name = "Reset"]
-            pub fn reset() -> ! {
-                loop {}
-            }
+            #[cortex_m_rt::entry]
+            fn _emcell_internal_main() -> ! {loop {}}
 
             #[no_mangle]
             #[link_section = #link_section]

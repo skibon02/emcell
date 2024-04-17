@@ -22,6 +22,3 @@ lto = true
 [profile.dev]
 opt-level = 1
 lto = true
-
-[patch.crates-io]
-cortex-m-rt = { path="cortex-m-rt-resetmod" }

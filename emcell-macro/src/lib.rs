@@ -117,35 +117,33 @@ pub fn extern_header(item: TokenStream) -> TokenStream {
                 pub static #internal_ident: #typez;
             }
 
-            pub type #name = emcell::CellWrapper<#typez>;
-
-            /// #Safety
-            /// Marked unsafe because should not be used by the user!
-            /// Only for code generation usage
-            pub unsafe trait CellWrapperTrait {
-                type CellWrapperType;
-                /// #Safety
-                /// CellWrapper can be constructed ONLY if this cell is used by exactly one other cell project
-                fn new() -> Option<Self::CellWrapperType>;
-                /// #Safety
-                /// CellWrapper can be constructed ONLY if this cell is used by exactly one other cell project
-                fn new_uninit() -> Self::CellWrapperType;
+            pub struct #name {
+                inner: emcell::CellWrapper<#typez>,
             }
 
-            /// #Safety
-            /// Marked unsafe because should not be used by the user!
-            /// Only for code generation usage
-            unsafe impl CellWrapperTrait for #name {
-                type CellWrapperType = #name;
-
+            impl #name {
+                /// #Safety
+                /// CellWrapper can be constructed ONLY if this cell is used by exactly one other cell project
                 fn new() -> Option<Self> {
                     let cell = unsafe { & #internal_ident };
-                    unsafe { emcell::CellWrapper::_new_init(cell)}
+                    unsafe { emcell::CellWrapper::_new_init(cell)}.map(|inner| Self { inner })
                 }
 
-                fn new_uninit() -> Self {
+                /// #Safety
+                /// CellWrapper can be constructed ONLY if this cell is used by exactly one other cell project
+                const fn new_uninit() -> Self {
                     let cell = unsafe { & #internal_ident };
-                    unsafe { emcell::CellWrapper::_new_uninit(cell) }
+                    let inner = unsafe { emcell::CellWrapper::_new_uninit(cell) };
+                    Self {
+                        inner
+                    }
+                }
+            }
+
+            impl core::ops::Deref for #name {
+                type Target = #typez;
+                fn deref(&self) -> &Self::Target {
+                    &self.inner
                 }
             }
         )

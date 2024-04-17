@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+#![feature(const_refs_to_static)]
+
 use core::slice::from_raw_parts;
 use at32f4xx_pac::at32f407::{CRM, GPIOC, gpioc, gpioe};
 use defmt::{error, info, warn};

@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+#![feature(const_refs_to_static)]
+
 use at32f4xx_pac::at32f407::{CRM, gpiob, gpioc, gpioe};
 use cortex_m::asm::delay;
 use emcell_macro::{define_header, extern_header};

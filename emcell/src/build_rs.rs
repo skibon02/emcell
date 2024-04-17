@@ -27,6 +27,8 @@ impl PartitionedFlashRegion {
         }
     }
 }
+use crate::build_rs::std::io::Read;
+
 #[cfg(feature = "rt-crate-cortex-m-rt")]
 pub fn build_rs<T: crate::Cell + 'static>() {
     let cells_meta = T::CELLS_META;
@@ -93,6 +95,10 @@ pub fn build_rs<T: crate::Cell + 'static>() {
     }
 
     memory_definition += "}\n";
+    if let Ok(mut f) = File::open("memory.x") {
+        memory_definition += "# Start of user-provided memory.x extension\n";
+        f.read_to_string(&mut memory_definition).unwrap();
+    }
 
 
 

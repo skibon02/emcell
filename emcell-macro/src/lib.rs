@@ -121,14 +121,14 @@ pub fn extern_header(item: TokenStream) -> TokenStream {
             impl #name {
                 /// #Safety
                 /// CellWrapper can be constructed ONLY if this cell is used by exactly one other cell project
-                fn new() -> Option<Self> {
+                pub fn new() -> Option<Self> {
                     let cell = unsafe { & #internal_ident };
                     unsafe { emcell::CellWrapper::_new_init(cell)}.map(|inner| Self { inner })
                 }
 
                 /// #Safety
                 /// CellWrapper can be constructed ONLY if this cell is used by exactly one other cell project
-                const fn new_uninit() -> Self {
+                pub const fn new_uninit() -> Self {
                     let cell = unsafe { & #internal_ident };
                     let inner = unsafe { emcell::CellWrapper::_new_uninit(cell) };
                     Self {
@@ -136,7 +136,7 @@ pub fn extern_header(item: TokenStream) -> TokenStream {
                     }
                 }
 
-                const fn new_dummy(dummy_header: &'static #typez) -> Self {
+                pub const fn new_dummy(dummy_header: &'static #typez) -> Self {
                     Self {
                         inner: emcell::CellWrapper::new_dummy(dummy_header)
                     }

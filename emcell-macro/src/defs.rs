@@ -312,6 +312,15 @@ pub fn emcell_configuration(input: TokenStream) -> TokenStream {
                 let sha_ok = unsafe {(self.init)(known_sha256)};
                 return sha_ok;
             }
+        }
+
+        impl #non_primary_cell_idents {
+            pub const fn get_cell_start_flash_addr() -> usize {
+                <Self as emcell::Cell>::CUR_META.absolute_flash_start(&META.device_configuration)
+            }
+            pub const fn get_cell_end_flash_addr() -> usize {
+                <Self as emcell::Cell>::CUR_META.absolute_flash_end(&META.device_configuration)
+            }
         })*
 
         unsafe impl emcell::Cell for #primary_cell_ident {
@@ -326,6 +335,15 @@ pub fn emcell_configuration(input: TokenStream) -> TokenStream {
                 let known_sha256 = Self::CUR_META.struct_sha256;
                 let sha_ok = unsafe {(self.init)(known_sha256)};
                 return sha_ok;
+            }
+        }
+
+        impl #primary_cell_ident {
+            pub const fn get_cell_start_flash_addr() -> usize {
+                <Self as emcell::Cell>::CUR_META.absolute_flash_start(&META.device_configuration)
+            }
+            pub const fn get_cell_end_flash_addr() -> usize {
+                <Self as emcell::Cell>::CUR_META.absolute_flash_end(&META.device_configuration)
             }
         }
 

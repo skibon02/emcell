@@ -41,6 +41,9 @@ unsafe fn main() -> ! {
 
     }
 
+    let cell2_start_ptr = Cell2::get_cell_start_flash_addr();
+    let cell2_end_ptr = Cell2::get_cell_end_flash_addr();
+    info!("cell1: Cell2 start: 0x{:X}, end: 0x{:X}", cell2_start_ptr as u32, cell2_end_ptr as u32);
 
     if let Some(cell2) = Cell2Wrapper::new() {
         info!("cell1: b from cell2: {}", cell2.b);
@@ -58,6 +61,7 @@ unsafe fn main() -> ! {
             delay(1_000_000);
         }
     }
+
 }
 
 pub const FLASH_UNLOCK_KEY1: u32 = 0x4567_0123;

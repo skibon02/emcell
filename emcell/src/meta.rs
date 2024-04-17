@@ -38,16 +38,16 @@ impl<const N: usize> CellDefsMeta<N> {
 
 impl CellDefMeta {
 
-    pub fn absolute_ram_start(&self, device_config_meta: &DeviceConfigMeta) -> usize {
+    pub const fn absolute_ram_start(&self, device_config_meta: &DeviceConfigMeta) -> usize {
         device_config_meta.ram_range_start + self.ram_range_start_offs
     }
-    pub fn absolute_ram_end(&self, device_config_meta: &DeviceConfigMeta) -> usize {
+    pub const fn absolute_ram_end(&self, device_config_meta: &DeviceConfigMeta) -> usize {
         device_config_meta.ram_range_start + self.ram_range_end_offs
     }
-    pub fn absolute_flash_start(&self, device_config_meta: &DeviceConfigMeta) -> usize {
+    pub const fn absolute_flash_start(&self, device_config_meta: &DeviceConfigMeta) -> usize {
         device_config_meta.flash_range_start + self.flash_range_start_offs
     }
-    pub fn absolute_flash_end(&self, device_config_meta: &DeviceConfigMeta) -> usize {
+    pub const fn absolute_flash_end(&self, device_config_meta: &DeviceConfigMeta) -> usize {
         device_config_meta.flash_range_start + self.flash_range_end_offs
     }
 }

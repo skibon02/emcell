@@ -141,6 +141,11 @@ pub fn extern_header(item: TokenStream) -> TokenStream {
                         inner: emcell::CellWrapper::new_dummy(dummy_header)
                     }
                 }
+
+                /// Try initialize cell's header in runtime
+                pub fn ensure_init(&self) -> Option<()> {
+                    self.inner.ensure_init()
+                }
             }
 
             impl core::ops::Deref for #name {

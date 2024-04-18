@@ -50,20 +50,18 @@ pub fn run() -> ! {
     gpioc.odt().write(|w| w.odt15().high());
 
     loop {
-        unsafe {
-            delay(1_000_000);
-            gpioe.odt().write(|w| w.odt0().set_bit()
-                .odt1().set_bit());
-            gpiob.odt().write(|w| w.odt5().set_bit());
-            
-            delay(1_000_000);
-            gpioe.odt().write(|w| w.odt0().clear_bit()
-                .odt1().clear_bit());
-            gpiob.odt().write(|w| w.odt5().clear_bit());
-            
-            if let Some(cell1) = Cell1Wrapper::new() {
-                (cell1.print_some_value)(cell1.a)
-            }
+        delay(1_000_000);
+        gpioe.odt().write(|w| w.odt0().set_bit()
+            .odt1().set_bit());
+        gpiob.odt().write(|w| w.odt5().set_bit());
+        
+        delay(1_000_000);
+        gpioe.odt().write(|w| w.odt0().clear_bit()
+            .odt1().clear_bit());
+        gpiob.odt().write(|w| w.odt5().clear_bit());
+        
+        if let Some(cell1) = Cell1Wrapper::new() {
+            (cell1.print_some_value)(cell1.a)
         }
     }
 }

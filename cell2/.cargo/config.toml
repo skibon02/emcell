@@ -1,5 +1,5 @@
 [target.'cfg(all(target_arch = "arm", target_os = "none"))']
-runner = "probe-rs download --chip AT32F407VGT7 --probe 1366:0105"
+runner = "probe-rs run --chip AT32F407VGT7 --probe 1366:0105"
 
 [build]
 rustflags = [

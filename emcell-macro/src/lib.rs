@@ -23,7 +23,13 @@ pub fn define_header(item: TokenStream) -> TokenStream {
     let output: proc_macro2::TokenStream = {
         quote!(
             #[cortex_m_rt::entry]
-            fn _emcell_internal_main() -> ! {loop {}}
+            fn _emcell_internal_main() -> ! {
+                let reset_vec_addr = unsafe { (&<#ident as emcell::Cell>::DEVICE_CONFIG.flash_range_start as *const usize)
+                .offset(1)} ;
+                let reset_vec = unsafe { reset_vec_addr.read_volatile() } as *const usize;
+                let reset_vec = unsafe { core::mem::transmute::<_, fn() -> !>(reset_vec) };
+                unsafe {reset_vec()}
+            }
 
             #[no_mangle]
             #[link_section = #link_section]

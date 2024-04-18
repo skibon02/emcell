@@ -24,9 +24,9 @@ pub fn define_header(item: TokenStream) -> TokenStream {
         quote!(
             #[cortex_m_rt::entry]
             fn _emcell_internal_main() -> ! {
-                let reset_vec_addr = unsafe { (&<#ident as emcell::Cell>::DEVICE_CONFIG.flash_range_start as *const usize)
+                let reset_vec_addr = unsafe { (<#ident as emcell::Cell>::DEVICE_CONFIG.flash_range_start as *const u32)
                 .offset(1)} ;
-                let reset_vec = unsafe { reset_vec_addr.read_volatile() } as *const usize;
+                let reset_vec = unsafe { reset_vec_addr.read_volatile() } as *const u32;
                 let reset_vec = unsafe { core::mem::transmute::<_, fn() -> !>(reset_vec) };
                 unsafe {reset_vec()}
             }

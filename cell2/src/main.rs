@@ -5,7 +5,7 @@
 
 use at32f4xx_pac::at32f407::{CRM, gpiob, gpioc, gpioe};
 use cortex_m::asm::delay;
-use emcell_macro::{define_header, extern_header};
+use emcell_macro::{define_header, extern_header_backward};
 use cells_defs::{Cell1, Cell2};
 
 extern crate panic_halt;
@@ -21,7 +21,7 @@ define_header!{
     }
 }
 
-extern_header!(Cell1Wrapper: Cell1);
+extern_header_backward!(Cell1Wrapper: Cell1);
 
 pub fn run() -> ! {
     let crm = unsafe { CRM::steal() };

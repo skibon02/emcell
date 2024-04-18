@@ -3,7 +3,7 @@ mod defs;
 use proc_macro::{TokenStream};
 use proc_macro2::Ident;
 use quote::{format_ident, quote, ToTokens};
-use syn::{ExprStruct, parse_macro_input};
+use syn::{ExprStruct, parse_macro_input, parse_quote, Path};
 use syn::parse::{Parse, ParseStream};
 use syn::token::{Colon};
 
@@ -33,12 +33,14 @@ pub fn define_header(item: TokenStream) -> TokenStream {
                 #fields
             };
 
-            unsafe fn __emcell_init(known_sha: [u8; 32]) -> bool {
+            unsafe fn __emcell_init(known_sha: [u8; 32], init_memory: bool) -> bool {
                 if known_sha != <#ident as emcell::Cell>::CUR_META.struct_sha256 {
                     return false;
                 }
 
-                emcell::device::init();
+                if (init_memory) {
+                    emcell::device::init();
+                }
                 true
             }
         )
@@ -70,12 +72,10 @@ pub fn define_primary_header(item: TokenStream) -> TokenStream {
                 #fields
             };
 
-            unsafe fn __emcell_init_primary(known_sha: [u8; 32]) -> bool {
+            unsafe fn __emcell_init_primary(known_sha: [u8; 32], _init_memory: bool) -> bool {
                 if known_sha != <#ident as emcell::Cell>::CUR_META.struct_sha256 {
                     return false;
                 }
-
-                emcell::device::init_primary();
                 true
             }
         )
@@ -101,31 +101,36 @@ impl Parse for ExternHeader {
     }
 }
 
-#[proc_macro]
-pub fn extern_header(item: TokenStream) -> TokenStream {
-    let ExternHeader { name, typez } = parse_macro_input!(item as ExternHeader);
 
-    let internal_ident = format_ident!("_emcell_{}_internal", typez);
+fn generate_extern_header(cell_name: Ident, cell_type: Ident, forward_or_backward: Path) -> TokenStream {
+    let internal_ident = format_ident!("_emcell_{}_internal", cell_type);
 
     let output: proc_macro2::TokenStream = {
         quote!(
             extern crate emcell;
             extern "Rust" {
-                pub static #internal_ident: #typez;
+                pub static #internal_ident: #cell_type;
             }
 
-            pub struct #name {
-                inner: emcell::CellWrapper<#typez>,
+            pub struct #cell_name {
+                inner: emcell::CellWrapper<#cell_type, #forward_or_backward>
             }
 
-            impl #name {
+            impl #cell_name {
+                /// Construct CellWrapper for this cell with signature check and memory initialization
+                ///
                 /// #Safety
                 /// CellWrapper can be constructed ONLY if this cell is used by exactly one other cell project
                 pub fn new() -> Option<Self> {
                     let cell = unsafe { & #internal_ident };
-                    unsafe { emcell::CellWrapper::_new_init(cell)}.map(|inner| Self { inner })
+                    unsafe { emcell::CellWrapper::<#cell_type, #forward_or_backward>::_new_init(cell)}.map(|inner| Self { inner })
                 }
 
+                /// Construct constant CellWrapper for this cell without signature check and memory initialization
+                /// Actual initialization will be performed later with ensure_init or automatically on first header access
+                ///
+                /// !Warning! Cell access will panic if initialization fails.
+                ///
                 /// #Safety
                 /// CellWrapper can be constructed ONLY if this cell is used by exactly one other cell project
                 pub const fn new_uninit() -> Self {
@@ -136,20 +141,21 @@ pub fn extern_header(item: TokenStream) -> TokenStream {
                     }
                 }
 
-                pub const fn new_dummy(dummy_header: &'static #typez) -> Self {
+                /// Construct CellWrapper with user-provided header
+                pub const fn new_dummy(dummy_header: &'static #cell_type) -> Self {
                     Self {
                         inner: emcell::CellWrapper::new_dummy(dummy_header)
                     }
                 }
 
-                /// Try initialize cell's header in runtime
+                /// Try to initialize cell's header in runtime. Designed to be used with new_uninit
                 pub fn ensure_init(&self) -> Option<()> {
                     self.inner.ensure_init()
                 }
             }
 
-            impl core::ops::Deref for #name {
-                type Target = #typez;
+            impl core::ops::Deref for #cell_name {
+                type Target = #cell_type;
                 fn deref(&self) -> &Self::Target {
                     &self.inner
                 }
@@ -160,6 +166,44 @@ pub fn extern_header(item: TokenStream) -> TokenStream {
     proc_macro::TokenStream::from(output)
 }
 
+/// Generate header wrapper for external cell
+///
+/// Cell specified in this macro **should not** be referenced with extern_header_forward in other cell projects.
+/// Cell **should not** be a primary cell.
+///
+/// # Example
+/// ```
+/// extern_header_forward! {
+///    Cell1Wrapper: Cell1
+/// }
+///
+///
+#[proc_macro]
+pub fn extern_header_forward(item: TokenStream) -> TokenStream {
+    let ExternHeader { name: cell_name, typez: cell_type } = parse_macro_input!(item as ExternHeader);
+    let forward_backward = parse_quote!(emcell::Backward);
+
+    generate_extern_header(cell_name, cell_type, forward_backward)
+}
+
+/// Generate header wrapper for parent external cell
+///
+/// It is only allowed to extern header, which use extern_header_forward with this cell. This cell is called parent cell.
+///
+/// # Example
+/// ```
+/// extern_header_backward! {
+///    Cell1Wrapper: Cell1
+/// }
+///
+///
+#[proc_macro]
+pub fn extern_header_backward(item: TokenStream) -> TokenStream {
+    let ExternHeader { name: cell_name, typez: cell_type } = parse_macro_input!(item as ExternHeader);
+    let forward_backward = parse_quote!(emcell::Forward);
+
+    generate_extern_header(cell_name, cell_type, forward_backward)
+}
 
 // Macro, defined in defs.rs for user crate with cells definitions
 #[proc_macro_attribute]

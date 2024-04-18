@@ -6,7 +6,7 @@
 use core::slice::from_raw_parts;
 use at32f4xx_pac::at32f407::{CRM, GPIOC, gpioc, gpioe};
 use defmt::{error, info, warn};
-use emcell_macro::{define_primary_header, extern_header};
+use emcell_macro::{define_primary_header, extern_header_forward};
 use cells_defs::{Cell1, Cell2};
 use cortex_m::asm::delay;
 use cortex_m::peripheral::SCB;
@@ -22,7 +22,7 @@ define_primary_header!{
     }
 }
 
-extern_header!(Cell2Wrapper: Cell2);
+extern_header_forward!(Cell2Wrapper: Cell2);
 
 const EOPB0_ADDR: *mut u8 = 0x1fff_f810 as *mut u8;
 

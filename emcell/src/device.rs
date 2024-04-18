@@ -1,14 +1,14 @@
+/// Must be called once to initialize memory
+/// It is enforced by rule "only one forward extern for cell"
 pub unsafe fn init() {
     init_memory();
-}
-
-pub unsafe fn init_primary() {
 }
 
 use core::ptr::{addr_of, addr_of_mut};
 
 /// Initialize BSS and DATA sections
-/// Should not be called directly! instead, use `init` function from the generated header
+/// Should not be called directly! Header wrapper use this function to initialize memory on first cell access
+#[inline(always)]
 #[cfg(feature = "rt-crate-cortex-m-rt")]
 pub unsafe fn init_memory() {
     use core::ptr;

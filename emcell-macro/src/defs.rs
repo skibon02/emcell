@@ -267,23 +267,23 @@ pub fn emcell_configuration(input: TokenStream) -> TokenStream {
     let emcell_configuration = parse_macro_input!(input as EmcellConfiguration);
 
     let mut cell_names = Vec::new();
-    let mut non_primary_cells = Vec::new();
+    let mut cell_idents = Vec::new();
+    let mut cell_indices = Vec::new();
+
     let mut non_primary_cell_idents = Vec::new();
-    let mut non_primary_cell_indices = Vec::new();
     let mut primary_cell = None;
-    let mut primary_cell_index = 0;
+
     for (i, cell) in emcell_configuration.cells.iter().enumerate() {
         let cell_name = cell.strukt.ident.to_string();
         cell_names.push(cell_name.clone());
+        cell_idents.push(cell.strukt.ident.clone());
+        cell_indices.push(i);
 
         if cell.is_primary {
             primary_cell = Some(cell);
-            primary_cell_index = i;
         }
         else {
-            non_primary_cells.push(cell);
             non_primary_cell_idents.push(cell.strukt.ident.clone());
-            non_primary_cell_indices.push(i);
         }
     }
     let primary_cell = primary_cell.unwrap();
@@ -299,22 +299,22 @@ pub fn emcell_configuration(input: TokenStream) -> TokenStream {
 
         pub type PrimaryCell = #primary_cell_ident;
 
-        #(unsafe impl emcell::Cell for #non_primary_cell_idents {
-            const CUR_META: emcell::meta::CellDefMeta = META.cell_defs[#non_primary_cell_indices];
+        #(unsafe impl emcell::Cell for #cell_idents {
+            const CUR_META: emcell::meta::CellDefMeta = META.cell_defs[#cell_indices];
             const DEVICE_CONFIG: emcell::meta::DeviceConfigMeta = META.device_configuration;
             const CELLS_META: &'static [emcell::meta::CellDefMeta] = &META.cell_defs;
-            fn check_signature(&self) -> bool {
-                if self.signature != 0xdeadbeef {
+            fn check_signature(&self, init_memory: bool) -> bool {
+                if self.signature != <Self as emcell::WithSignature>::VALID_SIGNATURE { // a little silly :3
                     return false;
                 }
 
                 let known_sha256 = Self::CUR_META.struct_sha256;
-                let sha_ok = unsafe {(self.init)(known_sha256)};
+                let sha_ok = unsafe {(self.init)(known_sha256, init_memory)};
                 return sha_ok;
             }
         }
 
-        impl #non_primary_cell_idents {
+        impl #cell_idents {
             pub const fn get_cell_start_flash_addr() -> usize {
                 <Self as emcell::Cell>::CUR_META.absolute_flash_start(&META.device_configuration)
             }
@@ -323,28 +323,12 @@ pub fn emcell_configuration(input: TokenStream) -> TokenStream {
             }
         })*
 
-        unsafe impl emcell::Cell for #primary_cell_ident {
-            const CUR_META: emcell::meta::CellDefMeta = META.cell_defs[#primary_cell_index];
-            const DEVICE_CONFIG: emcell::meta::DeviceConfigMeta  = META.device_configuration;
-            const CELLS_META: &'static [emcell::meta::CellDefMeta] = &META.cell_defs;
-            fn check_signature(&self) -> bool {
-                if self.signature != 0xbeefdead {
-                    return false;
-                }
+        #(unsafe impl emcell::WithSignature for #non_primary_cell_idents {
+            const VALID_SIGNATURE: u32 = 0xdeadbeef;
+        })*
 
-                let known_sha256 = Self::CUR_META.struct_sha256;
-                let sha_ok = unsafe {(self.init)(known_sha256)};
-                return sha_ok;
-            }
-        }
-
-        impl #primary_cell_ident {
-            pub const fn get_cell_start_flash_addr() -> usize {
-                <Self as emcell::Cell>::CUR_META.absolute_flash_start(&META.device_configuration)
-            }
-            pub const fn get_cell_end_flash_addr() -> usize {
-                <Self as emcell::Cell>::CUR_META.absolute_flash_end(&META.device_configuration)
-            }
+        unsafe impl emcell::WithSignature for #primary_cell_ident {
+            const VALID_SIGNATURE: u32 = 0xbeefdead;
         }
 
         pub const META: emcell::meta::CellDefsMeta::<#cell_count> = emcell::meta::CellDefsMeta {
@@ -502,7 +486,7 @@ pub fn cell(_cell_attr: TokenStream, item: TokenStream) -> TokenStream {
     fields.named.insert(0, signature_field);
 
     let init_field = Field::parse_named
-        .parse2(quote! { pub init: unsafe fn([u8; 32]) -> bool })
+        .parse2(quote! { pub init: unsafe fn([u8; 32], bool) -> bool })
         .unwrap();
     fields.named.insert(1, init_field);
 

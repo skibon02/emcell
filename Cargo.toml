@@ -3,6 +3,7 @@ resolver = "2"
 members = [
 "cell1",
 "cell2",
+"cell3",
 "emcell-macro",
 "cells_defs",
 "emcell"

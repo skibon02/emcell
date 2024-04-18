@@ -5,7 +5,6 @@
 
 use core::slice::from_raw_parts;
 use at32f4xx_pac::at32f407::{CRM, GPIOC, gpioc, gpioe};
-use defmt::{error, info, warn};
 use emcell_macro::{define_primary_header, extern_header_forward};
 use cells_defs::{Cell1, Cell2};
 use cortex_m::asm::delay;
@@ -13,12 +12,9 @@ use cortex_m::peripheral::SCB;
 
 extern crate panic_halt;
 extern crate at32f4xx_pac;
-extern crate defmt_rtt;
 
 define_primary_header!{
     Cell1 {
-        a: 15,
-        print_some_value,
     }
 }
 
@@ -34,29 +30,16 @@ fn is_extended_memory() -> bool {
 unsafe fn main() -> ! {
 
     if !is_extended_memory() {
-        warn!("Extended memory is not unlocked!");
         loop {
             delay(1_000_000);
         }
-
     }
-
-    let cell2_start_ptr = Cell2::get_cell_start_flash_addr();
-    let cell2_end_ptr = Cell2::get_cell_end_flash_addr();
-    info!("cell1: Cell2 start: 0x{:X}, end: 0x{:X}", cell2_start_ptr as u32, cell2_end_ptr as u32);
 
     if let Some(cell2) = Cell2Wrapper::new() {
-        info!("cell1: b from cell2: {}", cell2.b);
-        (cell2.run_some_code)();
-        info!("cell1: Accessing static...");
-        let v = (cell2.access_static)();
-        info!("cell1: static value: 0x{:X}", v);
-
         cell2.switch_vectors_and_run()
+
     }
     else {
-        error!("CELL2 signature is not valid!");
-
         loop {
             delay(1_000_000);
         }
@@ -128,8 +111,4 @@ unsafe fn pre_init() {
             SCB::sys_reset();
         }
     }
-}
-
-pub fn print_some_value(v: u32) {
-    info!("Someone asked us to print: {}", v);
 }

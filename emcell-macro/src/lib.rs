@@ -187,7 +187,7 @@ fn generate_extern_header(cell_name: Ident, cell_type: Ident, forward_or_backwar
 #[proc_macro]
 pub fn extern_header_forward(item: TokenStream) -> TokenStream {
     let ExternHeader { name: cell_name, typez: cell_type } = parse_macro_input!(item as ExternHeader);
-    let forward_backward = parse_quote!(emcell::Backward);
+    let forward_backward = parse_quote!(emcell::Forward);
 
     generate_extern_header(cell_name, cell_type, forward_backward)
 }
@@ -206,7 +206,7 @@ pub fn extern_header_forward(item: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn extern_header_backward(item: TokenStream) -> TokenStream {
     let ExternHeader { name: cell_name, typez: cell_type } = parse_macro_input!(item as ExternHeader);
-    let forward_backward = parse_quote!(emcell::Forward);
+    let forward_backward = parse_quote!(emcell::Backward);
 
     generate_extern_header(cell_name, cell_type, forward_backward)
 }

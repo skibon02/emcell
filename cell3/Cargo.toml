@@ -1,5 +1,5 @@
 [package]
-name = "cell2"
+name = "cell3"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,9 +12,7 @@ panic-halt = "0.2.0"
 
 emcell-macro = {path = "../emcell-macro"}
 emcell = { path = "../emcell" }
-cortex-m = { version = "0.7.7", features = ["critical-section", "critical-section-single-core"] }
-defmt-rtt = "0.4.0"
-defmt = "0.3.6"
+cortex-m = "0.7.7"
 
 [build-dependencies]
 cells_defs = {path = "../cells_defs"}
@@ -22,6 +20,6 @@ emcell = {path = "../emcell", features = ["build-rs"]}
 
 
 [[bin]]
-name="cell2"
+name="cell3"
 test=false
 bench=false

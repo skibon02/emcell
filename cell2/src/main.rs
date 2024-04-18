@@ -5,74 +5,52 @@
 
 use at32f4xx_pac::at32f407::{CRM, gpiob, gpioc, gpioe};
 use cortex_m::asm::delay;
-use emcell_macro::{define_header, extern_header_backward};
-use cells_defs::{Cell1, Cell2};
+use defmt::{error, info};
+use emcell_macro::{define_header, extern_header_forward};
+use cells_defs::{Cell2, Cell3};
 
 extern crate panic_halt;
 extern crate at32f4xx_pac;
+extern crate defmt_rtt;
 
 define_header!{
     Cell2 {
-        b: 23,
-        run_some_code,
-        access_static,
+        a: 15,
+        print_some_value,
         run,
         _emcell_internal_switch_vectors: emcell::device::switch_vectors,
     }
 }
 
-extern_header_backward!(Cell1Wrapper: Cell1);
+// extern_header_backward!(Cell1Wrapper: Cell1);
+extern_header_forward!(Cell3Wrapper: Cell3);
 
 pub fn run() -> ! {
-    let crm = unsafe { CRM::steal() };
-    crm.apb2en().modify(|_, w| w.gpioe().set_bit());
-    crm.apb2en().modify(|_, w| w.gpioc().set_bit());
-    crm.apb2en().modify(|_, w| w.gpiob().set_bit());
 
-    let gpioe = unsafe { at32f4xx_pac::at32f407::GPIOE::steal() };
-    gpioe.cfglr().modify(|_, w| w
-        .iomc0().variant(gpioe::cfglr::IOMC0_A::OutputLarge)
-        .iofc0().variant(gpioe::cfglr::IOFC0_A::Analog));
-    gpioe.cfglr().modify(|_, w| w
-        .iomc1().variant(gpioe::cfglr::IOMC0_A::OutputLarge)
-        .iofc1().variant(gpioe::cfglr::IOFC0_A::Analog));
+    let cell3_start_ptr = Cell3::get_cell_start_flash_addr();
+    let cell3_end_ptr = Cell3::get_cell_end_flash_addr();
+    info!("cell2: Cell3 start: 0x{:X}, end: 0x{:X}", cell3_start_ptr as u32, cell3_end_ptr as u32);
 
-    let gpiob = unsafe { at32f4xx_pac::at32f407::GPIOB::steal() };
-    gpiob.cfglr().modify(|_, w| w
-        .iomc5().variant(gpiob::cfglr::IOMC0_A::OutputLarge)
-        .iofc5().variant(gpiob::cfglr::IOFC0_A::Analog));
+    if let Some(cell3) = Cell3Wrapper::new() {
+        info!("cell2: b from cell3: {}", cell3.b);
+        info!("cell2: Accessing static...");
+        let v = (cell3.access_static)();
+        info!("cell2: static value: 0x{:X}", v);
 
-    let gpioc = unsafe { at32f4xx_pac::at32f407::GPIOC::steal() };
-    gpioc.cfghr().modify(|_, w| w
-        .iomc15().variant(gpioc::cfghr::IOMC8_A::OutputLarge)
-        .iofc15().variant(gpioc::cfghr::IOFC8_A::Analog));
+        loop {
+            delay(1_000_000);
+            (cell3.run_some_code)();
+        }
+    }
+    else {
+        error!("CELL2 signature is not valid!");
 
-    gpioc.odt().write(|w| w.odt15().high());
-
-    loop {
-        delay(1_000_000);
-        gpioe.odt().write(|w| w.odt0().set_bit()
-            .odt1().set_bit());
-        gpiob.odt().write(|w| w.odt5().set_bit());
-        
-        delay(1_000_000);
-        gpioe.odt().write(|w| w.odt0().clear_bit()
-            .odt1().clear_bit());
-        gpiob.odt().write(|w| w.odt5().clear_bit());
-        
-        if let Some(cell1) = Cell1Wrapper::new() {
-            (cell1.print_some_value)(cell1.a)
+        loop {
+            delay(1_000_000);
         }
     }
 }
 
-pub fn run_some_code() {
-    if let Some(cell1) = Cell1Wrapper::new() {
-        (cell1.print_some_value)(cell1.a)
-    }
-}
-
-pub const FLASH_UNLOCK_KEY1: u32 = 0x4567_0123;
-pub fn access_static() -> u32 {
-    FLASH_UNLOCK_KEY1
+pub fn print_some_value(v: u32) {
+    info!("Someone asked us to print: {}", v);
 }

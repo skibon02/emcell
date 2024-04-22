@@ -16,13 +16,13 @@ emcell_configuration! {
 
     #[cell(primary)]
     #[ram_region(0x6000, 0x6400)]
-    #[flash_region(0x0, 0x1000)]
+    #[flash_region(0x0, 0x4000)]
     pub struct Cell1 {
     }
 
     #[cell]
     #[ram_region(0x6400, 0x2_8000)] // 95KB
-    #[flash_region(0x1000, 0x9_0000)]
+    #[flash_region(0x0_4000, 0xF_1000)]
     pub struct Cell2 {
         #[switch_vectors]
         pub run: fn() -> !,
@@ -32,7 +32,7 @@ emcell_configuration! {
 
     #[cell]
     #[ram_region(0x2_8000, 0x3_4000)]
-    #[flash_region(0x9_0000, 0xF_0000)]
+    #[flash_region(0xF_1000, 0x10_0000)]
     pub struct Cell3 {
         pub b: u32,
         pub run_some_code: fn(),

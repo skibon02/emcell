@@ -101,9 +101,9 @@ impl<T, K> CellWrapper<T, K>
         }
     }
 
-    pub const fn new_dummy(dummy_abi: &'static T) -> Self {
+    pub const fn new_dummy(dummy_header: &'static T) -> Self {
         Self {
-            header: dummy_abi,
+            header: dummy_header,
             state: HeaderType::Dummy,
             is_init: AtomicBool::new(true),
             _phantom: PhantomData

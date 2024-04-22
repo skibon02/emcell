@@ -12,12 +12,28 @@ pub struct PartitionedFlashRegion {
 }
 
 impl PartitionedFlashRegion {
-    pub fn from(cell: &CellDefMeta, device_config_meta: &DeviceConfigMeta) -> Self {
+    pub fn new_header_first(cell: &CellDefMeta, device_config_meta: &DeviceConfigMeta) -> Self {
+        let start_header = cell.absolute_flash_start(device_config_meta);
+        let end_header = start_header + HEADER_SIZE;
+
+        let start_flash = end_header;
+        let end_flash = cell.absolute_flash_end(device_config_meta);
+
+
+        Self {
+            start_flash,
+            end_flash,
+            start_header,
+            end_header,
+        }
+    }
+
+    pub fn new_header_last(cell: &CellDefMeta, device_config_meta: &DeviceConfigMeta) -> Self {
         let start_flash = cell.absolute_flash_start(device_config_meta);
         let end_flash = cell.absolute_flash_end(device_config_meta) - HEADER_SIZE;
 
         let start_header = end_flash;
-        let end_header = end_flash + HEADER_SIZE;
+        let end_header = start_header + HEADER_SIZE;
 
         Self {
             start_flash,
@@ -28,6 +44,7 @@ impl PartitionedFlashRegion {
     }
 }
 use crate::build_rs::std::io::Read;
+use crate::CellType;
 
 #[cfg(feature = "rt-crate-cortex-m-rt")]
 pub fn build_rs<T: crate::Cell + 'static>() {
@@ -45,7 +62,11 @@ pub fn build_rs<T: crate::Cell + 'static>() {
     let cur_cell_name = cur_cell_meta.name;
     let other_cells_names: std::vec::Vec<&str> = cells_meta.iter().map(|cell| cell.name).filter(|name| *name != cur_cell_name).collect();
 
-    let cur_partitioned_flash_region = PartitionedFlashRegion::from(cur_cell_meta, &T::DEVICE_CONFIG);
+    let cur_partitioned_flash_region =
+        match cur_cell_meta.cell_type {
+            CellType::Primary => PartitionedFlashRegion::new_header_last(cur_cell_meta, &T::DEVICE_CONFIG),
+            CellType::NonPrimary => PartitionedFlashRegion::new_header_first(cur_cell_meta, &T::DEVICE_CONFIG)
+        };
     let mut memory_definition = String::from("# THIS SCRIPT WAS GENERATED AUTOMATICALLY BY emcell LIBRARY!\nMEMORY {\n")
         // this cell flash definition
         + &std::format!("  FLASH : ORIGIN = 0x{:X}, LENGTH = {}\n",
@@ -60,7 +81,11 @@ pub fn build_rs<T: crate::Cell + 'static>() {
 
     for cell_meta in cells_meta {
         let cell_name = cell_meta.name;
-        let partitioned_flash_region = PartitionedFlashRegion::from(cell_meta, &T::DEVICE_CONFIG);
+        let partitioned_flash_region =
+            match cell_meta.cell_type {
+                CellType::Primary => PartitionedFlashRegion::new_header_last(cell_meta, &T::DEVICE_CONFIG),
+                CellType::NonPrimary => PartitionedFlashRegion::new_header_first(cell_meta, &T::DEVICE_CONFIG)
+            };
         memory_definition += &(std::format!("  {}_FLASH : ORIGIN = 0x{:X}, LENGTH = {}\n",
                                                          cell_name,
                                                          partitioned_flash_region.start_flash,

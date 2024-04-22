@@ -5,6 +5,7 @@
 
 use core::slice::from_raw_parts;
 use at32f4xx_pac::at32f407::{CRM, GPIOC, gpioc, gpioe};
+use at32f4xx_pac::at32f407::gpioa::cfglr::{IOFC0_A, IOMC0_A};
 use emcell_macro::{define_primary_header, extern_header_forward};
 use cells_defs::{Cell1, Cell2};
 use cortex_m::asm::delay;
@@ -26,14 +27,37 @@ fn is_extended_memory() -> bool {
     (unsafe {EOPB0_ADDR.read_volatile()} & 0b1) == 0
 }
 
+
+fn gpio_cfgr() {
+
+    let crm = unsafe {at32f4xx_pac::at32f407::CRM::steal()};
+    let gpioe = unsafe {at32f4xx_pac::at32f407::GPIOE::steal()};
+
+    crm.apb2en().modify(|_, w| w.gpioe().set_bit());
+
+    gpioe.cfglr().modify(|_, w| w.iofc0().variant(IOFC0_A::Analog)
+        .iomc0().variant(IOMC0_A::Output));
+}
+
+fn led_on() {
+    let gpioe = unsafe {at32f4xx_pac::at32f407::GPIOE::steal()};
+    gpioe.odt().modify(|_, w| w.odt0().set_bit());
+}
+fn led_off() {
+    let gpioe = unsafe {at32f4xx_pac::at32f407::GPIOE::steal()};
+    gpioe.odt().modify(|_, w| w.odt0().clear_bit());
+}
+
 #[cortex_m_rt::entry]
 unsafe fn main() -> ! {
-
     if !is_extended_memory() {
         loop {
             delay(1_000_000);
         }
     }
+    //
+    // gpio_cfgr();
+    // led_on();
 
     if let Some(cell2) = Cell2Wrapper::new() {
         cell2.switch_vectors_and_run()

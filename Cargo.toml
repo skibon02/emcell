@@ -8,7 +8,6 @@ members = [
 "cells_defs",
 "emcell"
 ]
-exclude = ["cortex-m-rt-resetmod"]
 
 [profile.release-strip]
 inherits = "release"
@@ -21,5 +20,4 @@ codegen-units = 1
 lto = true
 
 [profile.dev]
-opt-level = 1
 lto = true

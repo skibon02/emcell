@@ -24,6 +24,7 @@ pub enum CellType {
     NonPrimary
 }
 
+#[derive(PartialEq, Copy, Clone)]
 pub enum HeaderType {
     Actual,
     Dummy
@@ -48,7 +49,7 @@ pub unsafe trait Cell: WithSignature {
 pub struct CellWrapper<T, K>
 where T: 'static {
     header: &'static T,
-    pub state: HeaderType,
+    header_type: HeaderType,
     is_init: AtomicBool,
     _phantom: PhantomData<K>
 }
@@ -95,7 +96,7 @@ impl<T, K> CellWrapper<T, K>
     pub const unsafe fn _new_uninit(h: &'static T) -> Self {
         Self {
             header: h,
-            state: HeaderType::Actual,
+            header_type: HeaderType::Actual,
             is_init: AtomicBool::new(false),
             _phantom: PhantomData
         }
@@ -104,10 +105,14 @@ impl<T, K> CellWrapper<T, K>
     pub const fn new_dummy(dummy_header: &'static T) -> Self {
         Self {
             header: dummy_header,
-            state: HeaderType::Dummy,
+            header_type: HeaderType::Dummy,
             is_init: AtomicBool::new(true),
             _phantom: PhantomData
         }
+    }
+
+    pub fn is_dummy(&self) -> bool {
+        self.header_type == HeaderType::Dummy
     }
 }
 
@@ -121,7 +126,7 @@ impl<T> CellWrapper<T, Forward>
 
         Some(Self {
             header: h,
-            state: HeaderType::Actual,
+            header_type: HeaderType::Actual,
             is_init: AtomicBool::new(true),
             _phantom: PhantomData
         })
@@ -152,7 +157,7 @@ impl<T> CellWrapper<T, Backward>
 
         Some(Self {
             header: h,
-            state: HeaderType::Actual,
+            header_type: HeaderType::Actual,
             is_init: AtomicBool::new(true),
             _phantom: PhantomData
         })

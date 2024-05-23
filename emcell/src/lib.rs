@@ -110,10 +110,6 @@ impl<T, K> CellWrapper<T, K>
             _phantom: PhantomData
         }
     }
-
-    pub fn is_dummy(&self) -> bool {
-        self.header_type == HeaderType::Dummy
-    }
 }
 
 
@@ -143,6 +139,10 @@ impl<T> CellWrapper<T, Forward>
         }
         self.is_init.store(true, core::sync::atomic::Ordering::Relaxed);
         Some(())
+    }
+
+    pub fn is_dummy(&self) -> bool {
+        self.header_type == HeaderType::Dummy
     }
 }
 
@@ -174,5 +174,9 @@ impl<T> CellWrapper<T, Backward>
         }
         self.is_init.store(true, core::sync::atomic::Ordering::Relaxed);
         Some(())
+    }
+
+    pub fn is_dummy(&self) -> bool {
+        self.header_type == HeaderType::Dummy
     }
 }

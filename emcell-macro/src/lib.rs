@@ -158,6 +158,11 @@ fn generate_extern_header(cell_name: Ident, cell_type: Ident, forward_or_backwar
                 pub fn ensure_init(&self) -> Option<()> {
                     self.inner.ensure_init()
                 }
+
+                /// Check if this cell wrapper was created with `new_dummy` method
+                pub fn is_dummy(&self) -> bool {
+                    self.inner.is_dummy()
+                }
             }
 
             impl core::ops::Deref for #cell_name {

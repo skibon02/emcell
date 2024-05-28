@@ -13,7 +13,7 @@ categories = ["embedded", "no-std", "memory-management"]
 cortex-m = {version = "0.7.7", optional = true }
 
 [features]
-default = []
+default = ["rt-crate-cortex-m-rt"]
 build-rs = []
 rt-crate-cortex-m-rt = ["cortex-m"]
 

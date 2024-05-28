@@ -4,6 +4,10 @@ version = "0.0.0"
 edition = "2021"
 description = "A macro crate for emcell"
 license = "MIT"
+repository = "https://github.com/skibon02/emcell"
+readme = "../README.md"
+keywords = ["embedded", "microcontroller", "flash", "memory"]
+categories = ["embedded", "no-std", "memory-management"]
 
 [lib]
 proc-macro = true

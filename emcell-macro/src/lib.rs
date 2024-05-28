@@ -184,6 +184,7 @@ fn generate_extern_header(cell_name: Ident, cell_type: Ident, forward_or_backwar
 ///
 /// # Example
 /// ```
+/// use emcell_macro::extern_header_forward;
 /// extern_header_forward! {
 ///    Cell1Wrapper: Cell1
 /// }
@@ -203,10 +204,11 @@ pub fn extern_header_forward(item: TokenStream) -> TokenStream {
 ///
 /// # Example
 /// ```
+/// use emcell_macro::extern_header_backward;
+///
 /// extern_header_backward! {
 ///    Cell1Wrapper: Cell1
 /// }
-///
 ///
 #[proc_macro]
 pub fn extern_header_backward(item: TokenStream) -> TokenStream {

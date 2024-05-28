@@ -1,1 +1,2 @@
-# emcell-playground
+# emcell
+

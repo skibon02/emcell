@@ -1,8 +1,7 @@
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span};
-use quote::{format_ident, quote, ToTokens};
+use quote::{quote, ToTokens};
 use sha2::{Digest, Sha256};
-use sha2::digest::typenum::private::IsNotEqualPrivate;
 use syn::{Data, DataStruct, DeriveInput, ExprMacro, Field, Fields, FieldValue, ItemStruct, LitInt, Member, Meta, parse2, parse_macro_input, parse_quote, Type, Visibility};
 use syn::parse::{Parse, Parser, ParseStream};
 use syn::punctuated::Punctuated;

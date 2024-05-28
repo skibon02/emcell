@@ -1,23 +1,10 @@
 [workspace]
 resolver = "2"
 members = [
-"cell1",
-"cell2",
-"cell3",
-"emcell-macro",
-"cells_defs",
-"emcell"
+    "emcell-macro",
+    "emcell",
+    "example/cell1",
+    "example/cell2",
+    "example/cell3",
+    "example/cells_defs",
 ]
-
-[profile.release-strip]
-inherits = "release"
-strip = true
-debug = false
-
-[profile.release]
-debug = true
-codegen-units = 1
-lto = true
-
-[profile.dev]
-lto = true

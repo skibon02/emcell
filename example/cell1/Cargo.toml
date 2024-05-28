@@ -1,0 +1,24 @@
+[package]
+name = "cell1"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+at32f4xx-pac = { version = "0.2.0", features = ["rt", "cortex-m-rt", "at32f437"] }
+
+cells_defs = {path = "../cells_defs" }
+cortex-m-rt = "0.7.4"
+panic-halt = "0.2.0"
+cortex-m = { version = "0.7.7", features = ["critical-section-single-core"] }
+
+emcell-macro = {path = "../../emcell-macro" }
+emcell = { path = "../../emcell" }
+
+[build-dependencies]
+cells_defs = {path = "../cells_defs" }
+emcell = {path = "../../emcell", features = ["build-rs"]}
+
+[[bin]]
+name="cell1"
+test=false
+bench=false

@@ -4,6 +4,7 @@
 #![feature(const_refs_to_static)]
 
 use at32f4xx_pac::at32f437::gpioa::cfgr::IOMC0_A;
+
 use emcell_macro::{define_primary_header, extern_header_forward};
 use cells_defs::{Cell1, Cell2};
 use cortex_m::asm::delay;
@@ -52,5 +53,4 @@ unsafe fn main() -> ! {
             delay(1_000_000);
         }
     }
-
 }

@@ -7,7 +7,7 @@ edition = "2021"
 at32f4xx-pac = { version = "0.2.0", features = ["rt", "cortex-m-rt", "at32f437"] }
 
 cells_defs = {path = "../cells_defs" }
-cortex-m-rt = "0.7.4"
+cortex-m-rt = "0.7.3"
 panic-halt = "0.2.0"
 
 emcell-macro = {path = "../../emcell-macro" }

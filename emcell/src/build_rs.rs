@@ -96,8 +96,8 @@ pub fn build_rs<T: crate::Cell + 'static>() {
                             partitioned_flash_region.end_header - partitioned_flash_region.start_header)
             + &std::format!("  {}_RAM : ORIGIN = 0x{:X}, LENGTH = {}\n\n",
                             cell_name,
-                            cur_cell_meta.absolute_ram_start(&T::DEVICE_CONFIG),
-                            cur_cell_meta.absolute_ram_end(&T::DEVICE_CONFIG) - cur_cell_meta.absolute_ram_start(&T::DEVICE_CONFIG)));
+                            cell_meta.absolute_ram_start(&T::DEVICE_CONFIG),
+                            cell_meta.absolute_ram_end(&T::DEVICE_CONFIG) - cell_meta.absolute_ram_start(&T::DEVICE_CONFIG)));
     }
 
     memory_definition += "}\n\n";

@@ -8,3 +8,6 @@ members = [
     "example/cell3",
     "example/cells_defs",
 ]
+
+[profile.release]
+debug = 2

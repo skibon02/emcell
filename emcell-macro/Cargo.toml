@@ -1,6 +1,6 @@
 [package]
 name = "emcell-macro"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 description = "A macro crate for emcell"
 license = "MIT"

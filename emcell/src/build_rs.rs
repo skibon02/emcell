@@ -102,6 +102,8 @@ pub fn build_rs<T: crate::Cell + 'static>() {
 
     memory_definition += "}\n\n";
 
+    // Stack strategy: place stack at the start of RAM
+    memory_definition += std::format!("_stack_end = 0x{:X};\n\n", T::DEVICE_CONFIG.ram_range_start).as_str();
     memory_definition += std::format!("_stack_start = 0x{:X};\n\n", T::DEVICE_CONFIG.initial_stack_ptr).as_str();
 
     memory_definition += "SECTIONS {\n";

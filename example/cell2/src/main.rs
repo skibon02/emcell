@@ -10,7 +10,7 @@ use at32f4xx_pac::at32f437::gpioa::cfgr::IOMC0_A;
 use cortex_m::asm::delay;
 use cortex_m::peripheral::SCB;
 use defmt::{Debug2Format, error, info, unwrap};
-use emcell_macro::{define_header, extern_header_forward};
+use emcell_macro::{define_header, extern_header_forward, place};
 use cells_defs::{Cell2, Cell3};
 
 extern crate at32f4xx_pac;
@@ -61,6 +61,7 @@ unsafe fn DefaultHandler(irq: i16) -> ! {
     loop {}
 }
 
+#[place(".slow_text")]
 pub fn memory_access_bench(range: core::ops::Range<usize>, data: &[u32]) {
     let mut ptr = &data[range.start] as *const u32;
     let start = get_cpu_cyc();

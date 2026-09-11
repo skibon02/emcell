@@ -11,7 +11,17 @@ pub struct CellDefMeta {
     pub flash_range_start_offs: usize,
     pub flash_range_end_offs: usize,
 
+    pub extra_flash_regions: &'static [ExtraFlashRegion],
+
     pub struct_sha256: [u8; 32],
+}
+
+#[derive(Copy, Clone)]
+pub struct ExtraFlashRegion {
+    pub name: &'static str,
+    pub section_name: &'static str,
+    pub flash_range_start_offs: usize,
+    pub flash_range_end_offs: usize,
 }
 
 #[derive(Copy, Clone)]
@@ -44,6 +54,15 @@ impl CellDefMeta {
     pub const fn absolute_ram_end(&self, device_config_meta: &DeviceConfigMeta) -> usize {
         device_config_meta.ram_range_start + self.ram_range_end_offs
     }
+    pub const fn absolute_flash_start(&self, device_config_meta: &DeviceConfigMeta) -> usize {
+        device_config_meta.flash_range_start + self.flash_range_start_offs
+    }
+    pub const fn absolute_flash_end(&self, device_config_meta: &DeviceConfigMeta) -> usize {
+        device_config_meta.flash_range_start + self.flash_range_end_offs
+    }
+}
+
+impl ExtraFlashRegion {
     pub const fn absolute_flash_start(&self, device_config_meta: &DeviceConfigMeta) -> usize {
         device_config_meta.flash_range_start + self.flash_range_start_offs
     }

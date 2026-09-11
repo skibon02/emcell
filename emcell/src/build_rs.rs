@@ -100,6 +100,17 @@ pub fn build_rs<T: crate::Cell + 'static>() {
                             cell_meta.absolute_ram_end(&T::DEVICE_CONFIG) - cell_meta.absolute_ram_start(&T::DEVICE_CONFIG)));
     }
 
+    // extra flash regions for the current cell only
+    for extra_region in cur_cell_meta.extra_flash_regions {
+        let region_name = extra_region.name.to_uppercase();
+        let start = extra_region.absolute_flash_start(&T::DEVICE_CONFIG);
+        let end = extra_region.absolute_flash_end(&T::DEVICE_CONFIG);
+        memory_definition += &std::format!("  {}_FLASH : ORIGIN = 0x{:X}, LENGTH = {}\n",
+                                           region_name,
+                                           start,
+                                           end - start);
+    }
+
     memory_definition += "}\n\n";
 
     // Stack strategy: place stack at the start of RAM
@@ -119,6 +130,14 @@ pub fn build_rs<T: crate::Cell + 'static>() {
         memory_definition += &(String::from("    .") + cell_name + "_HEADER ORIGIN(" + cell_name + "_HEADER) : {\n"
             + &std::format!("        _emcell_{}_internal = .;\n", cell_name)
             + "    } > " + cell_name + "_HEADER\n");
+    }
+
+    // extra flash regions for the current cell only
+    for extra_region in cur_cell_meta.extra_flash_regions {
+        let region_name = extra_region.name.to_uppercase();
+        memory_definition += &(String::from("    .") + &extra_region.name + " ORIGIN(" + &region_name + "_FLASH) : {\n"
+            + &std::format!("        *({})\n", extra_region.section_name)
+            + "    } > " + &region_name + "_FLASH\n");
     }
 
     memory_definition += "}\n";

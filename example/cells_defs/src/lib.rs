@@ -23,6 +23,7 @@ emcell_configuration! {
     #[cell]
     #[ram_region(0x6400, 0xA000)]
     #[flash_region(0x0_4000, 0xF_1000)]
+    #[extra_flash(name = "Slow", section = ".slow_text", 0xE_0000, 0xF_0000)]
     pub struct Cell2 {
         #[switch_vectors]
         pub run: fn() -> !,

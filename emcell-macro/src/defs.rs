@@ -1,5 +1,6 @@
 use proc_macro::TokenStream;
-use proc_macro2::{Ident, Span};
+use proc_macro2::Span;
+use syn::Ident;
 use quote::{quote, ToTokens};
 use sha2::{Digest, Sha256};
 use syn::{Data, DataStruct, DeriveInput, ExprMacro, Field, Fields, FieldValue, ItemStruct, LitInt, Member, Meta, parse2, parse_macro_input, parse_quote, Type, Visibility};
@@ -14,6 +15,7 @@ struct EmcellDef {
 
     ram_region: RamRegion,
     flash_region: FlashRegion,
+    extra_flash_regions: Vec<ExtraFlashRegion>,
     struct_sha256: [u8; 32],
 }
 
@@ -24,6 +26,8 @@ impl ToTokens for EmcellDef {
         let ram_region_end = self.ram_region.end;
         let flash_region_start = self.flash_region.start;
         let flash_region_end = self.flash_region.end;
+
+        let extra_flash_regions = &self.extra_flash_regions;
 
         let cell_type = if self.is_primary {
             quote! { emcell::CellType::Primary }
@@ -42,6 +46,7 @@ impl ToTokens for EmcellDef {
                 ram_range_end_offs: #ram_region_end,
                 flash_range_start_offs: #flash_region_start,
                 flash_range_end_offs: #flash_region_end,
+                extra_flash_regions: &[#(#extra_flash_regions),*],
                 struct_sha256: [#(#hash),*],
             }
         });
@@ -187,6 +192,7 @@ impl Parse for EmcellConfiguration {
             let mut is_primary = None;
             let mut ram_region = None;
             let mut flash_region = None;
+            let mut extra_flash_regions = Vec::new();
 
             for attr in &strukt.attrs {
                 let meta = &attr.meta;
@@ -200,6 +206,10 @@ impl Parse for EmcellConfiguration {
                     _ if name.is_ident("flash_region") => {
                         let meta = meta.require_list()?;
                         flash_region = Some(syn::parse2::<FlashRegion>(meta.tokens.clone())?);
+                    }
+                    _ if name.is_ident("extra_flash") => {
+                        let meta = meta.require_list()?;
+                        extra_flash_regions.push(syn::parse2::<ExtraFlashRegion>(meta.tokens.clone())?);
                     }
                     _ if name.is_ident("cell") => {
                         match meta {
@@ -244,6 +254,7 @@ impl Parse for EmcellConfiguration {
                 is_primary,
                 ram_region,
                 flash_region,
+                extra_flash_regions,
                 struct_sha256
             });
         }
@@ -430,6 +441,97 @@ impl Parse for FlashRegion {
     }
 }
 
+// extra_flash(name = "...", section = "...", start, end) attribute parsing
+struct ExtraFlashRegion {
+    name: String,
+    section_name: String,
+    start: usize,
+    end: usize,
+}
+
+impl Parse for ExtraFlashRegion {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let mut name = None;
+        let mut section_name = None;
+        let mut start = None;
+        let mut end = None;
+
+        while !input.is_empty() {
+            if input.peek(syn::Ident) && input.peek2(syn::Token![=]) {
+                let key: Ident = input.parse()?;
+                let _: syn::Token![=] = input.parse()?;
+
+                match key.to_string().as_str() {
+                    "name" => {
+                        let lit: syn::LitStr = input.parse()?;
+                        name = Some(lit.value());
+                    }
+                    "section" => {
+                        let lit: syn::LitStr = input.parse()?;
+                        section_name = Some(lit.value());
+                    }
+                    _ => {
+                        return Err(syn::Error::new(key.span(), "Expected `name` or `section` key"));
+                    }
+                }
+            } else {
+                let lit: LitInt = input.parse()?;
+                let value = parse_integer_lit(&lit)?;
+                if start.is_none() {
+                    start = Some(value);
+                } else if end.is_none() {
+                    end = Some(value);
+                } else {
+                    return Err(syn::Error::new(lit.span(), "Too many integer literals"));
+                }
+            }
+
+            if input.is_empty() {
+                break;
+            }
+            let _: Comma = input.parse()?;
+        }
+
+        let Some(name) = name else {
+            return Err(syn::Error::new(input.span(), "`name` field required"));
+        };
+        let Some(section_name) = section_name else {
+            return Err(syn::Error::new(input.span(), "`section` field required"));
+        };
+        let Some(start) = start else {
+            return Err(syn::Error::new(input.span(), "start offset required"));
+        };
+        let Some(end) = end else {
+            return Err(syn::Error::new(input.span(), "end offset required"));
+        };
+
+        Ok(ExtraFlashRegion {
+            name,
+            section_name,
+            start,
+            end,
+        })
+    }
+}
+
+impl ToTokens for ExtraFlashRegion {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        let name = &self.name;
+        let section_name = &self.section_name;
+        let start = self.start;
+        let end = self.end;
+
+        tokens.extend(quote! {
+            emcell::meta::ExtraFlashRegion {
+                name: #name,
+                section_name: #section_name,
+                flash_range_start_offs: #start,
+                flash_range_end_offs: #end,
+            }
+        });
+    }
+}
+
 pub fn cell(_cell_attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut header_struct = parse_macro_input!(item as DeriveInput);
 
@@ -542,6 +644,11 @@ pub fn ram_region(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
 //dummy flash_region
 pub fn flash_region(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    item
+}
+
+//dummy extra_flash
+pub fn extra_flash(_attr: TokenStream, item: TokenStream) -> TokenStream {
     item
 }
 

@@ -234,6 +234,38 @@ pub fn flash_region(attr: TokenStream, item: TokenStream) -> TokenStream {
     defs::flash_region(attr, item)
 }
 
+#[proc_macro_attribute]
+pub fn extra_flash(attr: TokenStream, item: TokenStream) -> TokenStream {
+    defs::extra_flash(attr, item)
+}
+
+/// Place an item into an extra flash region by its section name.
+///
+/// Expands to `#[link_section = "..."]`. The section name must be one declared
+/// via `#[extra_flash(name = "...", section = "...", start, end)]` and must NOT
+/// collide with `.text.*` / `.rodata.*`, otherwise the linker will greedily pull
+/// the item into the main `FLASH` region.
+///
+/// # Example
+/// ```ignore
+/// #[place(".slow_text")]
+/// fn rarely_used() { ... }
+/// ```
+#[proc_macro_attribute]
+pub fn place(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let section_name = attr.to_string();
+    let section_name = section_name.trim();
+    let section_name = section_name.trim_matches('"');
+
+    let item = proc_macro2::TokenStream::from(item);
+    let output = quote! {
+        #[link_section = #section_name]
+        #item
+    };
+
+    proc_macro::TokenStream::from(output)
+}
+
 /// Declare header function with signature fn() -> !, which use additional generated code for
 /// switching interrupt vectors to the ones from the cell
 #[proc_macro_attribute]

@@ -113,3 +113,55 @@ was not modified (by comparing hash) and is compatible with current crate.
 ## Nightly toolchain
 Currently, emcell requires nightly because of `const_refs_to_static` feature. 
 You can use `rustup override set nightly` to set nightly for the current directory.
+
+## Extra flash regions
+
+By default, each cell places all of its code and data (`.text`, `.rodata`, `.data`
+LMA) into the single flash region declared with `#[flash_region(start, end)]`.
+Sometimes you want to move a few big, rarely-used functions into a *separate*
+flash region that is not contiguous with the main one (e.g. a slower, larger
+flash bank), leaving a gap so the regions can be flashed independently.
+
+### Declaring an extra region
+
+Add one or more repeatable `#[extra_flash(...)]` attributes to a cell definition:
+
+```rust
+#[cell]
+#[ram_region(0x6400, 0xA000)]
+#[flash_region(0x0_4000, 0xF_1000)]
+#[extra_flash(name = "Slow", section = ".slow_text", 0xE_0000, 0xF_0000)]
+pub struct Cell2 {
+    // ...
+}
+```
+
+The attribute takes four values:
+
+- `name` — a stable identifier used to derive the linker memory region name
+  (e.g. `"Slow"` produces a `SLOW_FLASH` memory region).
+- `section` — the linker input section name that `#[place]`-marked items are
+  put into.
+- two integer offsets — the flash `start`/`end`, relative to
+  `flash_range_start` (the same convention as `#[flash_region]`).
+
+### Placing items into an extra region
+
+Mark items with the `#[place("...")]` attribute macro, passing the section name:
+
+```rust
+#[place(".slow_text")]
+pub fn rarely_used() {
+    // ...
+}
+```
+
+`#[place(".slow_text")]` expands to `#[link_section = ".slow_text"]`.
+
+### Important: section name must not collide with `.text.*` / `.rodata.*`
+
+`cortex-m-rt`'s `link.x` places code with `*(.text .text.*)` and rodata with
+`*(.rodata .rodata.*)`. If an extra region's section name matches `.text.*` or
+`.rodata.*` (e.g. `.text.slow`), the linker will greedily pull the item into the
+main `FLASH` region and it will never reach the extra region. Use a distinct
+prefix such as `.slow_text` (NOT `.text.slow`).
